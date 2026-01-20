@@ -41,6 +41,11 @@ part_3_server: part_3_server.o Message.o part_3_your_task.o
 $(OBJS): $(SRCS) $(HDRS)
 	$(CXX) $(CFLAGS) $(DFLAGS) -c $(SRCS)
 
+format:
+	clang-format -i *.cpp *.h
+
+lint:
+	cpplint --extensions=cpp,h *.cpp *.h
 
 clean:
 	rm -f *.o $(TARGETS)
