@@ -12,7 +12,7 @@ CXX := g++
 HDRS := $(wildcard *.h)		
 SRCS := $(wildcard *.cpp)	
 OBJS := $(SRCS:.cpp=.o)		# replaces .cpp extension to .o (e.g., main.cpp -> main.o)
-				# and stores the names to OBJS
+# and stores the names to OBJS
 
 # -Wall prints: all warnings
 # -std=c++11: use of C++11

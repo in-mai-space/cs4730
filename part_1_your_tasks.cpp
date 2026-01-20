@@ -20,6 +20,7 @@ void part_1_1_unique_ptr() {
   printTwoBooks(aliceBook, bobBook);
 
   std::cout << "\nAlice gave the book to Bob.\n" << std::endl;
+  bobBook = std::move(aliceBook);
 
   printTwoBooks(aliceBook, bobBook);
 }
@@ -38,6 +39,7 @@ void part_1_2_shared_ptr() {
   printTwoBooks(aliceBook, bobBook);
 
   std::cout << "\nAlice shared the book with Bob.\n" << std::endl;
+  bobBook = aliceBook;
 
   printTwoBooks(aliceBook, bobBook);
 }
@@ -46,20 +48,20 @@ void part_1_2_shared_ptr() {
     PART 1 - 3
 *******************************************************************************/
 
-// Implement the following two member functions for the
-// Library class. Look at Library.h and Library.cpp for other details
-// about the Library class.
+// push the book which is given as the function argument
+// into the BACK of the book list (i.e., books).
 void Library::AddBook(std::unique_ptr<Book> book) {
-  // TODO: push the book which is given as the function argument
-  // into the BACK of the book list (i.e., books).
+  books.push_back(std::move(book));
 }
 
+// take the book at the FRONT of the book list, remove the book from the list, and return.
+// If there is no book in the list, return nullptr.
 std::unique_ptr<Book> Library::CheckoutBook() {
-  // TODO: take the book at the FRONT of the book list,
-  // remove the book from the list, and return.
-  // If there is no book in the list, return nullptr.
-  // You may change the code within this function (i.e., return nullptr;)
-  // however you want.
+  if (!books.empty()) {
+    auto book = std::move(books.front());
+    books.pop_front();
+    return book;
+  }
 
   return nullptr;
 }
