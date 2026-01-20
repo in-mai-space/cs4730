@@ -23,16 +23,17 @@ void part_2_1_work_with_threads(
     std::shared_ptr<ThreadSleeper> sleeper = std::make_shared<ThreadSleeper>();
     // add its pointer to sleepVector
     sleeperVector.push_back(sleeper);
-    // create thread and pass member function pointer, class instance, parameter for func
+    // create thread and pass member function pointer, class instance, parameter
+    // for func
     std::thread t(&ThreadSleeper::ThreadBody, sleeper, i);
     // move threads into thread vector
     threads.push_back(std::move(t));
   }
 
   // wait until all created threads terminate
-  for (auto& th : threads) {
+  for (auto &th : threads) {
     if (th.joinable()) {
-        th.join();
+      th.join();
     }
   }
 }
@@ -58,9 +59,10 @@ void part_2_2_thread_in_pool(int id, std::condition_variable &cv,
     // lock the mutex protecting the job queue
     std::unique_lock<std::mutex> lock(mtx);
 
-    // wait until the job queue is not empty (wait unlocks and re-locks the mutex)
+    // wait until the job queue is not empty (wait unlocks and re-locks the
+    // mutex)
     while (jobQueue->empty()) {
-        cv.wait(lock);
+      cv.wait(lock);
     }
     // dequeue job
     auto job = jobQueue->front();
@@ -68,13 +70,13 @@ void part_2_2_thread_in_pool(int id, std::condition_variable &cv,
 
     // if REQ_QUIT, exit loop adn terminate
     if (job == REQ_QUIT) {
-        break;
-    } 
-    
+      break;
+    }
+
     // if REQ_WORK, release on lock on jobQueue and execute job
     if (job == REQ_WORK) {
-        lock.unlock();
-        part_2_2_process_work(id);
+      lock.unlock();
+      part_2_2_process_work(id);
     }
   }
 }
@@ -84,10 +86,8 @@ void part_2_2_thread_in_pool(int id, std::condition_variable &cv,
 *******************************************************************************/
 void part_2_3_promise_and_future_thread(int multiplier, std::future<int> fut,
                                         std::promise<int> prom) {
-
-  // TODO:
-  // Wait until you receive a value from the future,
-  // Multiply the received value with the multiplier,
-  // and send the result over through promise to the
-  // future waiting for the value.
+  // wait to receive value from future
+  auto value = fut.get();
+  // multiply value by multiplier and send back to future
+  prom.set_value(value * multiplier);
 }
