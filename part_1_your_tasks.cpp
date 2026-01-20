@@ -54,8 +54,8 @@ void Library::AddBook(std::unique_ptr<Book> book) {
   books.push_back(std::move(book));
 }
 
-// take the book at the FRONT of the book list, remove the book from the list, and return.
-// If there is no book in the list, return nullptr.
+// take the book at the FRONT of the book list, remove the book from the list,
+// and return. If there is no book in the list, return nullptr.
 std::unique_ptr<Book> Library::CheckoutBook() {
   if (!books.empty()) {
     auto book = std::move(books.front());
