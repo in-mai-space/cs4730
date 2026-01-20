@@ -12,7 +12,7 @@ CXX := g++
 HDRS := $(wildcard *.h)		
 SRCS := $(wildcard *.cpp)	
 OBJS := $(SRCS:.cpp=.o)		# replaces .cpp extension to .o (e.g., main.cpp -> main.o)
-				# and stores the names to OBJS
+# and stores the names to OBJS
 
 # -Wall prints: all warnings
 # -std=c++11: use of C++11
@@ -41,6 +41,11 @@ part_3_server: part_3_server.o Message.o part_3_your_task.o
 $(OBJS): $(SRCS) $(HDRS)
 	$(CXX) $(CFLAGS) $(DFLAGS) -c $(SRCS)
 
+format:
+	clang-format -i *.cpp *.h
+
+lint:
+	cpplint --extensions=cpp,h *.cpp *.h
 
 clean:
 	rm -f *.o $(TARGETS)
