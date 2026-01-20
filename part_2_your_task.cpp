@@ -15,25 +15,27 @@
 *******************************************************************************/
 void part_2_1_work_with_threads(
     int count, std::vector<std::shared_ptr<ThreadSleeper>> &sleeperVector) {
+  std::vector<std::thread> threads;
 
-  // TODO:
-  // - Create threads as many as count.
-  // - Each thread should be associated with a ThreadSleeper instance.
-  // - ThreadSleeper contains the thread body, or the ThreadBody function.
-  //   ThreadBody records the start time, sleeps for 3 seconds, and
-  //   records the end time to the ThreadSleeper instance.
-  //   Read through ThreadSleeper.h/cpp for details.
-  //
-  // - 1. You must instantiate the ThreadSleeper instance and add its
-  //   pointer to sleeperVector.
-  // - 2. Use std::thread to start and run the threads concurrently.
-  //   Create threads using the apprach for t5 in the example in
-  //   https://en.cppreference.com/w/cpp/thread/thread/thread.html
-  //   which passes 1) the pointer to the member function, 2) reference to the
-  //   class instance, and 3) parameters to the member function to the
-  //   constructor. Pass a unique ID to the thread to store in the
-  //   ThreadSleeper instance.
-  // - 3. Wait until all created threads terminate using join().
+  // create as many threads as count
+  for (int i = 0; i < count; i++) {
+    // instantiate ThreadSleeper instance
+    std::shared_ptr<ThreadSleeper> sleeper = std::make_shared<ThreadSleeper>();
+    // add its pointer to sleepVector
+    sleeperVector.push_back(sleeper);
+    // create thread and pass member function pointer, class instance, parameter
+    // for func
+    std::thread t(&ThreadSleeper::ThreadBody, sleeper, i);
+    // move threads into thread vector
+    threads.push_back(std::move(t));
+  }
+
+  // wait until all created threads terminate
+  for (auto &th : threads) {
+    if (th.joinable()) {
+      th.join();
+    }
+  }
 }
 
 /*******************************************************************************
@@ -53,18 +55,30 @@ void part_2_2_process_work(int id);
 void part_2_2_thread_in_pool(int id, std::condition_variable &cv,
                              std::mutex &mtx,
                              std::shared_ptr<std::queue<int>> jobQueue) {
+  while (true) {
+    // lock the mutex protecting the job queue
+    std::unique_lock<std::mutex> lock(mtx);
 
-  // TODO:
-  // You should use the lock to protect the condition
-  // variable and shared queue. Once woken up, this
-  // thread should check the queue for incoming request,
-  // dequeue it, and process it. This should be done
-  // in an infinite loop until REQ_QUIT is received.
-  // - If the request is REQ_WORK, part_2_2_process_work
-  //   function should be called.
-  // - If the request is REQ_QUIT, you should exit the
-  //   loop and terminate this thread (i.e., let the code
-  //   execute up to the end of this function).
+    // wait until the job queue is not empty (wait unlocks and re-locks the
+    // mutex)
+    while (jobQueue->empty()) {
+      cv.wait(lock);
+    }
+    // dequeue job
+    auto job = jobQueue->front();
+    jobQueue->pop();
+
+    // if REQ_QUIT, exit loop adn terminate
+    if (job == REQ_QUIT) {
+      break;
+    }
+
+    // if REQ_WORK, release on lock on jobQueue and execute job
+    if (job == REQ_WORK) {
+      lock.unlock();
+      part_2_2_process_work(id);
+    }
+  }
 }
 
 /*******************************************************************************
@@ -72,10 +86,8 @@ void part_2_2_thread_in_pool(int id, std::condition_variable &cv,
 *******************************************************************************/
 void part_2_3_promise_and_future_thread(int multiplier, std::future<int> fut,
                                         std::promise<int> prom) {
-
-  // TODO:
-  // Wait until you receive a value from the future,
-  // Multiply the received value with the multiplier,
-  // and send the result over through promise to the
-  // future waiting for the value.
+  // wait to receive value from future
+  auto value = fut.get();
+  // multiply value by multiplier and send back to future
+  prom.set_value(value * multiplier);
 }
