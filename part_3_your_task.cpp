@@ -18,7 +18,7 @@
 // TODO: return value should match with the amount of
 // data encoded into the buffer.
 int Request::Marshal(char *buffer) {
-  // TODO: Write a code that marshals req_id, user_id
+  // TODO: Write a code that marshals req_id, user_id,
   //  requester (32 character string), num1, and
   //  num2 into a C-string (i.e., buffer) for the
   //  transfer over the network. Note that (unsigned) int and short
@@ -32,9 +32,30 @@ int Request::Marshal(char *buffer) {
   //  The format should be
   //  [req_id 4B][user_id 2B][requester 32B][num1 4B][num2 4B].
   //  You will need to use memcpy to copy the data to the buffer.
+  constexpr size_t REQUESTER_SIZE = 32;
+  size_t offset = 0;
+  uint32_t net_req_id  = htonl(req_id);
+  uint16_t net_user_id = htons(user_id);
+  uint32_t net_num1    = htonl(num1);
+  uint32_t net_num2    = htonl(num2);
 
-  // feel free to change "return 0;" below.
-  return 0;
+  std::memcpy(buffer + offset, &net_req_id, sizeof(net_req_id));
+  offset += sizeof(net_req_id);
+
+  std::memcpy(buffer + offset, &net_user_id, sizeof(net_user_id));
+  offset += sizeof(net_user_id);
+
+  std::memset(buffer + offset, 0, REQUESTER_SIZE);
+  std::memcpy(buffer + offset,requester.c_str(), std::min(requester.size(), REQUESTER_SIZE - 1));
+  offset += REQUESTER_SIZE;
+
+  std::memcpy(buffer + offset, &net_num1, sizeof(net_num1));
+  offset += sizeof(net_num1);
+
+  std::memcpy(buffer + offset, &net_num2, sizeof(net_num2));
+  offset += sizeof(net_num2);
+
+  return offset;
 }
 
 // This is a function that the server program will use
@@ -51,6 +72,35 @@ void Request::Unmarshal(char *buffer) {
   // convert them to host format using ntoh functions (use ntons or ntonl
   // depending on the size of data). Requester only needs to be converted
   // to std::string and does not need to be converted to the host format.
+  constexpr size_t REQUESTER_SIZE = 32;
+  size_t offset = 0;
+
+  uint32_t net_req_id;
+  uint16_t net_user_id;
+  uint32_t net_num1;
+  uint32_t net_num2;
+
+  std::memcpy(&net_req_id, buffer + offset, sizeof(net_req_id));
+  offset += sizeof(net_req_id);
+  req_id = ntohl(net_req_id);
+
+  std::memcpy(&net_user_id, buffer + offset, sizeof(net_user_id));
+  offset += sizeof(net_user_id);
+  user_id = ntohs(net_user_id);
+
+  requester = std::string(
+      buffer + offset,
+      strnlen(buffer + offset, REQUESTER_SIZE)
+  );
+  offset += REQUESTER_SIZE;
+
+  std::memcpy(&net_num1, buffer + offset, sizeof(net_num1));
+  offset += sizeof(net_num1);
+  num1 = ntohl(net_num1);
+
+  std::memcpy(&net_num2, buffer + offset, sizeof(net_num2));
+  offset += sizeof(net_num2);
+  num2 = ntohl(net_num2);
 }
 
 // This is a function that the server program will use
@@ -68,9 +118,25 @@ int Response::Marshal(char *buffer) {
   //  the size of data).
   //  The format should be
   //  [req_id 4B][user_id 2B][res_id 4B][response 4B].
+  size_t offset = 0;
+  uint32_t net_req_id  = htonl(req_id);
+  uint16_t net_user_id = htons(user_id);
+  uint32_t net_res_id = htonl(res_id);
+  uint32_t net_response = htonl(sum);
 
-  // feel free to change "return 0;" below.
-  return 0;
+  std::memcpy(buffer + offset, &net_req_id, sizeof(net_req_id));
+  offset += sizeof(net_req_id);
+
+  std::memcpy(buffer + offset, &net_user_id, sizeof(net_user_id));
+  offset += sizeof(net_user_id);
+
+  std::memcpy(buffer + offset, &net_res_id, sizeof(net_res_id));
+  offset += sizeof(net_res_id);
+
+  std::memcpy(buffer + offset, &net_response, sizeof(net_response));
+  offset += sizeof(net_response);
+
+  return offset;
 }
 
 // This is a function that the client program will use
@@ -86,6 +152,28 @@ void Response::Unmarshal(char *buffer) {
   // (unsigned) int and short types are in network format so you will need to
   // convert them to host format using ntoh functions (use ntons or ntonl
   // depending on the size of data).
+  size_t offset = 0;
+
+  uint32_t net_req_id;
+  uint16_t net_user_id;
+  uint32_t net_res_id;
+  uint32_t net_response;
+
+  std::memcpy(&net_req_id, buffer + offset, sizeof(net_req_id));
+  offset += sizeof(net_req_id);
+  req_id = ntohl(net_req_id);
+
+  std::memcpy(&net_user_id, buffer + offset, sizeof(net_user_id));
+  offset += sizeof(net_user_id);
+  user_id = ntohs(net_user_id);
+
+  std::memcpy(&net_res_id, buffer + offset, sizeof(net_res_id));
+  offset += sizeof(net_res_id);
+  res_id = ntohl(net_res_id);
+
+  std::memcpy(&net_response, buffer + offset, sizeof(net_response));
+  offset += sizeof(net_response);
+  sum = ntohl(net_response);
 }
 
 /******************************************************************************
