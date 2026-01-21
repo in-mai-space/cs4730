@@ -32,7 +32,6 @@ int Request::Marshal(char *buffer) {
   //  The format should be
   //  [req_id 4B][user_id 2B][requester 32B][num1 4B][num2 4B].
   //  You will need to use memcpy to copy the data to the buffer.
-  constexpr size_t REQUESTER_SIZE = 32;
   size_t offset = 0;
   uint32_t net_req_id = htonl(req_id);
   uint16_t net_user_id = htons(user_id);
@@ -45,10 +44,9 @@ int Request::Marshal(char *buffer) {
   std::memcpy(buffer + offset, &net_user_id, sizeof(net_user_id));
   offset += sizeof(net_user_id);
 
-  std::memset(buffer + offset, 0, REQUESTER_SIZE);
-  std::memcpy(buffer + offset, requester.c_str(),
-              std::min(requester.size(), REQUESTER_SIZE - 1));
-  offset += REQUESTER_SIZE;
+  std::memset(buffer + offset, 0, MAX_REQUESTER_LEN);
+  std::memcpy(buffer + offset, requester.c_str(), MAX_REQUESTER_LEN - 1);
+  offset += MAX_REQUESTER_LEN;
 
   std::memcpy(buffer + offset, &net_num1, sizeof(net_num1));
   offset += sizeof(net_num1);
@@ -73,7 +71,6 @@ void Request::Unmarshal(char *buffer) {
   // convert them to host format using ntoh functions (use ntons or ntonl
   // depending on the size of data). Requester only needs to be converted
   // to std::string and does not need to be converted to the host format.
-  constexpr size_t REQUESTER_SIZE = 32;
   size_t offset = 0;
 
   uint32_t net_req_id;
@@ -90,8 +87,8 @@ void Request::Unmarshal(char *buffer) {
   user_id = ntohs(net_user_id);
 
   requester =
-      std::string(buffer + offset, strnlen(buffer + offset, REQUESTER_SIZE));
-  offset += REQUESTER_SIZE;
+      std::string(buffer + offset, strnlen(buffer + offset, MAX_REQUESTER_LEN));
+  offset += MAX_REQUESTER_LEN;
 
   std::memcpy(&net_num1, buffer + offset, sizeof(net_num1));
   offset += sizeof(net_num1);
@@ -193,12 +190,11 @@ void part_3_client_marshal_send_recv_unmarshal(Request &req, Response &res,
   }
 
   // wait and get streamed response
-  constexpr int SERVER_RESPONSE_SIZE = 14;
   int total_received = 0;
 
-  while (total_received < SERVER_RESPONSE_SIZE) {
+  while (total_received < RESPONSE_BUF_SIZE) {
     int received = recv(sockfd, buffer + total_received,
-                        SERVER_RESPONSE_SIZE - total_received, 0);
+                        RESPONSE_BUF_SIZE - total_received, 0);
     total_received += received;
   }
 
@@ -209,12 +205,11 @@ void part_3_client_marshal_send_recv_unmarshal(Request &req, Response &res,
 // This is the code going into the server of Part 3 - 2
 void part_3_server_recv_unmarshal(Request &req, char *buffer, int sockfd) {
   // receive the request in byte array using socket
-  constexpr int CLIENT_REQUEST_SIZE = 46;
   int total_received = 0;
 
-  while (total_received < CLIENT_REQUEST_SIZE) {
+  while (total_received < REQUEST_BUF_SIZE) {
     int received = recv(sockfd, buffer + total_received,
-                        CLIENT_REQUEST_SIZE - total_received, 0);
+                        REQUEST_BUF_SIZE - total_received, 0);
     total_received += received;
   }
 
