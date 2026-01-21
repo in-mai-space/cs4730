@@ -182,25 +182,56 @@ void Response::Unmarshal(char *buffer) {
 // This is the code going into the client of Part 3 - 2
 void part_3_client_marshal_send_recv_unmarshal(Request &req, Response &res,
                                                char *buffer, int sockfd) {
+  // get marshalled byte array using Request
+  int request_size = req.Marshal(buffer);
 
-  // TODO:
-  // 1) get marshalled byte array (i.e., buffer) using Request (i.e., req).
-  // 2) send the marshalled buffer over the network.
-  // 3) wait and receive server's response.
-  // 4) unmarshal the received byte array into Response (i.e., res).
+  // streaming the request
+  int total_sent = 0;
+  while (total_sent < request_size) {
+    int sent = send(sockfd, buffer + total_sent, request_size - total_sent, 0);
+    total_sent += sent;
+  }
+
+  // wait and get streamed response
+  constexpr int SERVER_RESPONSE_SIZE = 14;
+  int total_received = 0;
+
+  while (total_received < SERVER_RESPONSE_SIZE) {
+    int received = recv(sockfd, buffer + total_received,
+                        SERVER_RESPONSE_SIZE - total_received, 0);
+    total_received += received;
+  }
+
+  // unmarshal the received byte array into Response
+  res.Unmarshal(buffer);
 }
 
 // This is the code going into the server of Part 3 - 2
 void part_3_server_recv_unmarshal(Request &req, char *buffer, int sockfd) {
+  // receive the request in byte array using socket
+  constexpr int CLIENT_REQUEST_SIZE = 46;
+  int total_received = 0;
 
-  // TODO:
-  // 1) receive the request in byte array using the socket from the client
-  // 2) unmashal the received byte array into Request (i.e., res)
+  while (total_received < CLIENT_REQUEST_SIZE) {
+    int received = recv(sockfd, buffer + total_received,
+                        CLIENT_REQUEST_SIZE - total_received, 0);
+    total_received += received;
+  }
+
+  // unmarshall the received byte array into Request
+  req.Unmarshal(buffer);
 }
 
 // This is the code going into the server of Part 3 - 2
 void part_3_server_marshal_send(Response &res, char *buffer, int sockfd) {
-  // TODO:
-  // 1) get marshalled byte array (i.e., buffer) using Response (i.e., res).
-  // 2) send the marshalled buffer over the network using send.
+  // get marshalled byte array
+  int response_size = res.Marshal(buffer);
+
+  // send the marshalled buffer over network using send
+  int total_sent = 0;
+  while (total_sent < response_size) {
+    int sent_size =
+        send(sockfd, buffer + total_sent, response_size - total_sent, 0);
+    total_sent += sent_size;
+  }
 }
