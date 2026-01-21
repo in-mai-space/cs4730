@@ -34,10 +34,10 @@ int Request::Marshal(char *buffer) {
   //  You will need to use memcpy to copy the data to the buffer.
   constexpr size_t REQUESTER_SIZE = 32;
   size_t offset = 0;
-  uint32_t net_req_id  = htonl(req_id);
+  uint32_t net_req_id = htonl(req_id);
   uint16_t net_user_id = htons(user_id);
-  uint32_t net_num1    = htonl(num1);
-  uint32_t net_num2    = htonl(num2);
+  uint32_t net_num1 = htonl(num1);
+  uint32_t net_num2 = htonl(num2);
 
   std::memcpy(buffer + offset, &net_req_id, sizeof(net_req_id));
   offset += sizeof(net_req_id);
@@ -46,7 +46,8 @@ int Request::Marshal(char *buffer) {
   offset += sizeof(net_user_id);
 
   std::memset(buffer + offset, 0, REQUESTER_SIZE);
-  std::memcpy(buffer + offset,requester.c_str(), std::min(requester.size(), REQUESTER_SIZE - 1));
+  std::memcpy(buffer + offset, requester.c_str(),
+              std::min(requester.size(), REQUESTER_SIZE - 1));
   offset += REQUESTER_SIZE;
 
   std::memcpy(buffer + offset, &net_num1, sizeof(net_num1));
@@ -88,10 +89,8 @@ void Request::Unmarshal(char *buffer) {
   offset += sizeof(net_user_id);
   user_id = ntohs(net_user_id);
 
-  requester = std::string(
-      buffer + offset,
-      strnlen(buffer + offset, REQUESTER_SIZE)
-  );
+  requester =
+      std::string(buffer + offset, strnlen(buffer + offset, REQUESTER_SIZE));
   offset += REQUESTER_SIZE;
 
   std::memcpy(&net_num1, buffer + offset, sizeof(net_num1));
@@ -119,7 +118,7 @@ int Response::Marshal(char *buffer) {
   //  The format should be
   //  [req_id 4B][user_id 2B][res_id 4B][response 4B].
   size_t offset = 0;
-  uint32_t net_req_id  = htonl(req_id);
+  uint32_t net_req_id = htonl(req_id);
   uint16_t net_user_id = htons(user_id);
   uint32_t net_res_id = htonl(res_id);
   uint32_t net_response = htonl(sum);
