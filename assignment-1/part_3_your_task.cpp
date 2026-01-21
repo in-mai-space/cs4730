@@ -182,13 +182,7 @@ void Response::Unmarshal(char *buffer) {
 // This is the code going into the client of Part 3 - 2
 void part_3_client_marshal_send_recv_unmarshal(Request &req, Response &res,
                                                char *buffer, int sockfd) {
-
-  // TODO:
-  // 1) get marshalled byte array (i.e., buffer) using Request (i.e., req).
-  // 2) send the marshalled buffer over the network.
-  // 3) wait and receive server's response.
-  // 4) unmarshal the received byte array into Response (i.e., res).
-
+  // get marshalled byte array using Request
   int request_size = req.Marshal(buffer);
 
   // streaming the request
@@ -208,15 +202,13 @@ void part_3_client_marshal_send_recv_unmarshal(Request &req, Response &res,
     total_received += received;
   }
 
+  // unmarshal the received byte array into Response
   res.Unmarshal(buffer);
 }
 
 // This is the code going into the server of Part 3 - 2
 void part_3_server_recv_unmarshal(Request &req, char *buffer, int sockfd) {
-
-  // TODO:
-  // 1) receive the request in byte array using the socket from the client
-  // 2) unmashal the received byte array into Request (i.e., res)
+  // receive the request in byte array using socket
   constexpr int CLIENT_REQUEST_SIZE = 46;
   int total_received = 0;
 
@@ -226,15 +218,16 @@ void part_3_server_recv_unmarshal(Request &req, char *buffer, int sockfd) {
     total_received += received;
   }
 
+  // unmarshall the received byte array into Request
   req.Unmarshal(buffer);
 }
 
 // This is the code going into the server of Part 3 - 2
 void part_3_server_marshal_send(Response &res, char *buffer, int sockfd) {
-  // TODO:
-  // 1) get marshalled byte array (i.e., buffer) using Response (i.e., res).
-  // 2) send the marshalled buffer over the network using send.
+  // get marshalled byte array
   int response_size = res.Marshal(buffer);
+
+  // send the marshalled buffer over network using send
   int total_sent = 0;
   while (total_sent < response_size) {
     int sent_size =
