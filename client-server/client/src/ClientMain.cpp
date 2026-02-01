@@ -6,21 +6,15 @@
 #include "../include/ClientStub.h"
 #include "../include/ClientConfig.h"
 
-int start_client(const ClientConfig *config);
+void start_client(const ClientConfig *config);
 
 int main(int argc, char *argv[]) {
 	ClientConfig cfg = parse_client_config(argc, argv);
-
-	int result = start_client(&cfg);
-	if (result != 0) {
-		std::cerr << "Client failed to start." << std::endl;
-		return result;
-	}
-
+	start_client(&cfg);
 	return 0;
 }
 
-int start_client(const ClientConfig *cfg) {
+void start_client(const ClientConfig *cfg) {
 	std::vector<std::thread> customer_threads;
 	std::vector<std::shared_ptr<ClientStub>> client_stubs;
 
@@ -43,6 +37,4 @@ int start_client(const ClientConfig *cfg) {
 			thread.join();
 		}
 	}
-
-	return 0;
 }
