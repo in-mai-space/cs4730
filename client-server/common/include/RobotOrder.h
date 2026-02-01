@@ -6,9 +6,9 @@ class RobotOrder {
 	public:
 		int customer_id;
 		int order_number;
-		RobotType robot_type;
+		int robot_type;
 
-		RobotOrder(int cust_id, int order_num, RobotType robot_t);
+		RobotOrder(int cust_id, int order_num, int robot_t);
 };
 
 #endif
