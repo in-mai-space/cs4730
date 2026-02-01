@@ -5,9 +5,9 @@
 
 class ServerStub {
     public:
-        void Init(int sock_fd);
-        void ReceiveOrder(RobotOrder details);
-        void ShipRobot(Robot robot);
+        void init(int sock_fd);
+        void receive_order(RobotOrder details);
+        void ship_robot(Robot robot);
 };
 
 #endif

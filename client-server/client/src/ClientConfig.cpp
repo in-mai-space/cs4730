@@ -21,7 +21,7 @@ ClientConfig::ClientConfig(std::string server_ip, int server_port, int customers
 	  orders(orders),
 	  robot_type(robot_type) {}
 
-static bool parseInt(const char *value, int &out) {
+static bool parse_int(const char *value, int &out) {
 	if (!value || *value == '\0') {
 		return false;
 	}
@@ -37,7 +37,7 @@ static bool parseInt(const char *value, int &out) {
 	return true;
 }
 
-ClientConfig parseClientConfig(int argc, char *argv[]) {
+ClientConfig parse_client_config(int argc, char *argv[]) {
 	if (argc != 5) {
 		std::cerr << "Usage: " << argv[0] << " <server_ip> <server_port> <num_customers> <num_orders>" << std::endl;
 		exit(1);
@@ -47,15 +47,15 @@ ClientConfig parseClientConfig(int argc, char *argv[]) {
 	int num_customers = 0;
 	int num_orders = 0;
 
-	if (!parseInt(argv[2], port) || port <= 0 || port > 65535) {
+	if (!parse_int(argv[2], port) || port <= 0 || port > 65535) {
 		std::cerr << "Invalid port: " << argv[2] << std::endl;
 		exit(1);
 	}
-	if (!parseInt(argv[3], num_customers) || num_customers <= 0) {
+	if (!parse_int(argv[3], num_customers) || num_customers <= 0) {
 		std::cerr << "Invalid number of customers: " << argv[3] << std::endl;
 		exit(1);
 	}
-	if (!parseInt(argv[4], num_orders) || num_orders <= 0) {
+	if (!parse_int(argv[4], num_orders) || num_orders <= 0) {
 		std::cerr << "Invalid number of orders: " << argv[4] << std::endl;
 		exit(1);
 	}

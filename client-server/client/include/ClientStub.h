@@ -6,8 +6,8 @@
 
 class ClientStub {
     public:
-        void Init(std::string ip, int port);
-        void Order(RobotOrder details);
+        void init(std::string ip, int port);
+        void order(RobotOrder details);
 
     private:
         ClientSocket socket;

@@ -3,8 +3,8 @@
 
 class ServerSocket {
     public:
-        bool Listen(int port);
-        int Accept();
+        bool listen(int port);
+        int accept();
 };
 
 #endif

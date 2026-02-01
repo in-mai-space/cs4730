@@ -6,12 +6,12 @@
 #include "../include/ClientStub.h"
 #include "../include/ClientConfig.h"
 
-int startClient(const ClientConfig *config);
+int start_client(const ClientConfig *config);
 
 int main(int argc, char *argv[]) {
-	ClientConfig cfg = parseClientConfig(argc, argv);
+	ClientConfig cfg = parse_client_config(argc, argv);
 
-	int result = startClient(&cfg);
+	int result = start_client(&cfg);
 	if (result != 0) {
 		std::cerr << "Client failed to start." << std::endl;
 		return result;
@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
 	return 0;
 }
 
-int startClient(const ClientConfig *cfg) {
+int start_client(const ClientConfig *cfg) {
 	std::vector<std::thread> customer_threads;
 	std::vector<std::shared_ptr<ClientStub>> client_stubs;
 
@@ -30,11 +30,11 @@ int startClient(const ClientConfig *cfg) {
 		// initialize a client stub for each customer
 		std::shared_ptr<ClientStub> stub = std::make_shared<ClientStub>();
 		client_stubs.push_back(stub);
-		stub->Init(cfg->server_ip, cfg->server_port);
+		stub->init(cfg->server_ip, cfg->server_port);
 
 		// create a thread for each customer to place orders
 		RobotOrder order(i, cfg->orders, cfg->robot_type);
-		std::thread t(&ClientStub::Order, stub, order, i);
+		std::thread t(&ClientStub::order, stub, order, i);
     	customer_threads.push_back(std::move(t));
 	}
 

@@ -20,6 +20,6 @@ class ClientConfig {
         RobotType robot_type;
 };
 
-ClientConfig parseClientConfig(int argc, char *argv[]);
+ClientConfig parse_client_config(int argc, char *argv[]);
 
 #endif

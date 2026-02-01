@@ -10,18 +10,18 @@ public:
     ClientSocket();
     ~ClientSocket();
 
-    bool Connect(const std::string& ip, int port);
-    bool Send(const RobotOrder& order);
-    bool Receive(RobotOrder& order);
+    bool connect(const std::string& ip, int port);
+    bool send(const RobotOrder& order);
+    bool receive(RobotOrder& order);
 
 private:
-    int Marshall(const RobotOrder& order, char* buffer, int buffer_size);
-    int Unmarshal(const char* buffer, int buffer_size, RobotOrder& order);
+    int marshall(const RobotOrder& order, char* buffer, int buffer_size);
+    int unmarshall(const char* buffer, int buffer_size, RobotOrder& order);
 
-    bool sendAll(const char* data, size_t len);
-    bool recvAll(char* data, size_t len);
+    bool send_all(const char* data, size_t len);
+    bool receive_all(char* data, size_t len);
 
-    int sockfd;
+    int sock_fd;
 };
 
 #endif
