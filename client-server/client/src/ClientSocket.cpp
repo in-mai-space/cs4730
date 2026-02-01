@@ -44,8 +44,8 @@ bool ClientSocket::send(const RobotOrder& order) {
     return send_all(buffer, len);
 }
 
-bool ClientSocket::receive(RobotOrder& order) {
-    char buffer[sizeof(RobotOrder)];
+bool ClientSocket::receive(Robot& order) {
+    char buffer[sizeof(Robot)];
 
     if (!receive_all(buffer, sizeof(buffer)))
         return false;
@@ -90,18 +90,24 @@ int ClientSocket::marshall(const RobotOrder& order, char* buffer, int buffer_siz
     return 3 * sizeof(int);
 }
 
-int ClientSocket::unmarshall(const char* buffer, int buffer_size, RobotOrder& order) {
-    if (buffer_size < 3 * (int)sizeof(int))
+int ClientSocket::unmarshall(const char* buffer, int buffer_size, Robot& order) {
+    if (buffer_size < 5 * (int)sizeof(int))
         return -1;
 
     int net_customer_id = 0, net_order_number = 0, net_robot_type = 0;
+    int net_engineer_id = 0, net_expert_id = 0;
+
     std::memcpy(&net_customer_id, buffer, sizeof(int));
     std::memcpy(&net_order_number, buffer + sizeof(int), sizeof(int));
     std::memcpy(&net_robot_type, buffer + 2 * sizeof(int), sizeof(int));
+    std::memcpy(&net_engineer_id, buffer + 3 * sizeof(int), sizeof(int));
+    std::memcpy(&net_expert_id, buffer + 4 * sizeof(int), sizeof(int));
 
     order.customer_id = ntohl(net_customer_id);
     order.order_number = ntohl(net_order_number);
-    order.robot_type = ntohl(net_robot_type);
+    order.robot_type = static_cast<RobotType>(ntohl(net_robot_type));
+    order.engineer_id = ntohl(net_engineer_id);
+    order.expert_id = ntohl(net_expert_id);
 
-    return 3 * sizeof(int);
+    return 5 * sizeof(int);
 }
