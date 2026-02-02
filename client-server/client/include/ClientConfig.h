@@ -11,13 +11,13 @@ class ClientConfig {
         static const std::string DEFAULT_SERVER_IP;
 
         ClientConfig();
-        ClientConfig(std::string server_ip, int server_port, int customers, int orders, RobotType robot_type);
+        ClientConfig(std::string server_ip, int server_port, int customers, int orders, int robot_type);
 
         std::string server_ip;
         int server_port;
         int customers;
         int orders;
-        RobotType robot_type;
+        int robot_type;
 };
 
 ClientConfig parse_client_config(int argc, char *argv[]);

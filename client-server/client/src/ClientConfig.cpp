@@ -12,9 +12,9 @@ ClientConfig::ClientConfig()
 	  server_port(DEFAULT_SERVER_PORT),
 	  customers(1),
 	  orders(1),
-	  robot_type(REGULAR) {}
+	  robot_type(0) {}
 
-ClientConfig::ClientConfig(std::string server_ip, int server_port, int customers, int orders, RobotType robot_type)
+ClientConfig::ClientConfig(std::string server_ip, int server_port, int customers, int orders, int robot_type)
 	: server_ip(std::move(server_ip)),
 	  server_port(server_port),
 	  customers(customers),
@@ -60,5 +60,5 @@ ClientConfig parse_client_config(int argc, char *argv[]) {
 		exit(1);
 	}
 
-	return ClientConfig(argv[1], port, num_customers, num_orders, REGULAR);
+	return ClientConfig(argv[1], port, num_customers, num_orders, 0);
 }

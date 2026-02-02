@@ -105,7 +105,7 @@ int ClientSocket::unmarshall(const char* buffer, int buffer_size, Robot& order) 
 
     order.customer_id = ntohl(net_customer_id);
     order.order_number = ntohl(net_order_number);
-    order.robot_type = static_cast<RobotType>(ntohl(net_robot_type));
+    order.robot_type = ntohl(net_robot_type);
     order.engineer_id = ntohl(net_engineer_id);
     order.expert_id = ntohl(net_expert_id);
 

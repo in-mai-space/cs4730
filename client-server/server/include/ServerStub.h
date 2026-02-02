@@ -2,12 +2,16 @@
 #define SERVERSTUB_H
 #include "../../common/include/RobotOrder.h"
 #include "../../common/include/Robot.h"
+#include "ServerSocket.h"
 
 class ServerStub {
     public:
-        void init(int sock_fd);
-        void receive_order(RobotOrder details);
-        void ship_robot(Robot robot);
+        void init(ServerSocket* socket);
+        void handle_client(int client_fd);
+        Robot process_order(const RobotOrder& order);
+
+    private:
+        ServerSocket* socket;
 };
 
 #endif
