@@ -5,9 +5,23 @@
 #include "ServerSocket.h"
 
 class ServerStub {
-   public:
+   public:  
+    /**
+     * Initializes the server stub with the given server socket.
+     * @param socket Pointer to the ServerSocket instance.
+     */
     void init(ServerSocket* socket);
+
+    /**
+     * Handles client requests in a loop until the client disconnects.
+     * @param client_fd The file descriptor of the connected client.
+     */
     void handle_client(int client_fd);
+
+    /**
+     * Processes a RobotOrder and generates a Robot response.
+     * @param order The RobotOrder received from the client.
+     */
     Robot process_order(const RobotOrder& order);
 
    private:
