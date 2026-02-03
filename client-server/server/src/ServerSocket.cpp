@@ -1,19 +1,20 @@
 #include "../include/ServerSocket.h"
-#include "../../common/include/RobotOrder.h"
-#include "../../common/include/Robot.h"
-#include <sys/socket.h>
+
 #include <arpa/inet.h>
-#include <cstring>
+#include <sys/socket.h>
 #include <unistd.h>
+
+#include <cstring>
 #include <iostream>
+
+#include "../../common/include/Robot.h"
+#include "../../common/include/RobotOrder.h"
 
 ServerSocket::ServerSocket() : socket_fd(-1), client_fd(-1) {}
 
 ServerSocket::~ServerSocket() {
-    if (client_fd >= 0)
-        close(client_fd);
-    if (socket_fd >= 0)
-        close(socket_fd);
+    if (client_fd >= 0) close(client_fd);
+    if (socket_fd >= 0) close(socket_fd);
 }
 
 bool ServerSocket::listen(int port) {
@@ -25,7 +26,8 @@ bool ServerSocket::listen(int port) {
 
     // Allow socket reuse
     int opt = 1;
-    if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+    if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) <
+        0) {
         std::cerr << "Error setting socket options" << std::endl;
         close(socket_fd);
         return false;
@@ -55,13 +57,14 @@ bool ServerSocket::listen(int port) {
 int ServerSocket::accept() {
     sockaddr_in client_addr{};
     socklen_t client_len = sizeof(client_addr);
-    
-    int new_client_fd = ::accept(socket_fd, (sockaddr*)&client_addr, &client_len);
+
+    int new_client_fd =
+        ::accept(socket_fd, (sockaddr*)&client_addr, &client_len);
     if (new_client_fd < 0) {
         std::cerr << "Error accepting client connection" << std::endl;
         return -1;
     }
-    
+
     return new_client_fd;
 }
 
@@ -69,8 +72,7 @@ bool ServerSocket::send(const Robot& robot, int client_fd) {
     int fd = (client_fd != -1) ? client_fd : this->client_fd;
     char buffer[sizeof(Robot)];
     int len = marshall(robot, buffer, sizeof(buffer));
-    if (len <= 0)
-        return false;
+    if (len <= 0) return false;
 
     return send_all(buffer, len, fd);
 }
@@ -79,8 +81,7 @@ bool ServerSocket::receive(RobotOrder& order, int client_fd) {
     int fd = (client_fd != -1) ? client_fd : this->client_fd;
     char buffer[sizeof(RobotOrder)];
 
-    if (!receive_all(buffer, sizeof(buffer), fd))
-        return false;
+    if (!receive_all(buffer, sizeof(buffer), fd)) return false;
 
     return unmarshall(buffer, sizeof(buffer), order) > 0;
 }
@@ -89,8 +90,7 @@ bool ServerSocket::send_all(const char* data, size_t len, int client_fd) {
     size_t total = 0;
     while (total < len) {
         ssize_t sent = ::send(client_fd, data + total, len - total, 0);
-        if (sent <= 0)
-            return false;
+        if (sent <= 0) return false;
         total += sent;
     }
     return true;
@@ -100,16 +100,14 @@ bool ServerSocket::receive_all(char* data, size_t len, int client_fd) {
     size_t total = 0;
     while (total < len) {
         ssize_t recvd = ::recv(client_fd, data + total, len - total, 0);
-        if (recvd <= 0)
-            return false;
+        if (recvd <= 0) return false;
         total += recvd;
     }
     return true;
 }
 
 int ServerSocket::marshall(const Robot& robot, char* buffer, int buffer_size) {
-    if (buffer_size < 5 * (int)sizeof(int))
-        return -1;
+    if (buffer_size < 5 * (int)sizeof(int)) return -1;
 
     int net_customer_id = htonl(robot.customer_id);
     int net_order_number = htonl(robot.order_number);
@@ -126,9 +124,9 @@ int ServerSocket::marshall(const Robot& robot, char* buffer, int buffer_size) {
     return 5 * sizeof(int);
 }
 
-int ServerSocket::unmarshall(const char* buffer, int buffer_size, RobotOrder& order) {
-    if (buffer_size < 3 * (int)sizeof(int))
-        return -1;
+int ServerSocket::unmarshall(const char* buffer, int buffer_size,
+                             RobotOrder& order) {
+    if (buffer_size < 3 * (int)sizeof(int)) return -1;
 
     int net_customer_id = 0, net_order_number = 0, net_robot_type = 0;
 

@@ -1,12 +1,13 @@
 #ifndef CLIENTSOCKET_H
 #define CLIENTSOCKET_H
 
-#include "../../common/include/RobotOrder.h"
-#include <string>
 #include <cstddef>
+#include <string>
+
+#include "../../common/include/RobotOrder.h"
 
 class ClientSocket {
-public:
+   public:
     ClientSocket();
     ~ClientSocket();
 
@@ -14,7 +15,7 @@ public:
     bool send(const RobotOrder& order);
     bool receive(Robot& order);
 
-private:
+   private:
     int marshall(const RobotOrder& order, char* buffer, int buffer_size);
     int unmarshall(const char* buffer, int buffer_size, Robot& order);
 

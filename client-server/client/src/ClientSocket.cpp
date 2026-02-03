@@ -1,20 +1,20 @@
 #include "../include/ClientSocket.h"
-#include <sys/socket.h>
+
 #include <arpa/inet.h>
+#include <sys/socket.h>
 #include <unistd.h>
+
 #include <cstring>
 
 ClientSocket::ClientSocket() : sock_fd(-1) {}
 
 ClientSocket::~ClientSocket() {
-    if (sock_fd >= 0)
-        close(sock_fd);
+    if (sock_fd >= 0) close(sock_fd);
 }
 
 bool ClientSocket::connect(const std::string& ip, int port) {
     sock_fd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock_fd < 0)
-        return false;
+    if (sock_fd < 0) return false;
 
     sockaddr_in serv_addr{};
     serv_addr.sin_family = AF_INET;
@@ -38,8 +38,7 @@ bool ClientSocket::connect(const std::string& ip, int port) {
 bool ClientSocket::send(const RobotOrder& order) {
     char buffer[sizeof(RobotOrder)];
     int len = marshall(order, buffer, sizeof(buffer));
-    if (len <= 0)
-        return false;
+    if (len <= 0) return false;
 
     return send_all(buffer, len);
 }
@@ -47,8 +46,7 @@ bool ClientSocket::send(const RobotOrder& order) {
 bool ClientSocket::receive(Robot& order) {
     char buffer[sizeof(Robot)];
 
-    if (!receive_all(buffer, sizeof(buffer)))
-        return false;
+    if (!receive_all(buffer, sizeof(buffer))) return false;
 
     return unmarshall(buffer, sizeof(buffer), order) > 0;
 }
@@ -57,8 +55,7 @@ bool ClientSocket::send_all(const char* data, size_t len) {
     size_t total = 0;
     while (total < len) {
         ssize_t sent = ::send(sock_fd, data + total, len - total, 0);
-        if (sent <= 0)
-            return false;
+        if (sent <= 0) return false;
         total += sent;
     }
     return true;
@@ -68,16 +65,15 @@ bool ClientSocket::receive_all(char* data, size_t len) {
     size_t total = 0;
     while (total < len) {
         ssize_t recvd = ::recv(sock_fd, data + total, len - total, 0);
-        if (recvd <= 0)
-            return false;
+        if (recvd <= 0) return false;
         total += recvd;
     }
     return true;
 }
 
-int ClientSocket::marshall(const RobotOrder& order, char* buffer, int buffer_size) {
-    if (buffer_size < 3 * (int)sizeof(int))
-        return -1;
+int ClientSocket::marshall(const RobotOrder& order, char* buffer,
+                           int buffer_size) {
+    if (buffer_size < 3 * (int)sizeof(int)) return -1;
 
     int net_customer_id = htonl(order.customer_id);
     int net_order_number = htonl(order.order_number);
@@ -90,9 +86,9 @@ int ClientSocket::marshall(const RobotOrder& order, char* buffer, int buffer_siz
     return 3 * sizeof(int);
 }
 
-int ClientSocket::unmarshall(const char* buffer, int buffer_size, Robot& order) {
-    if (buffer_size < 5 * (int)sizeof(int))
-        return -1;
+int ClientSocket::unmarshall(const char* buffer, int buffer_size,
+                             Robot& order) {
+    if (buffer_size < 5 * (int)sizeof(int)) return -1;
 
     int net_customer_id = 0, net_order_number = 0, net_robot_type = 0;
     int net_engineer_id = 0, net_expert_id = 0;
