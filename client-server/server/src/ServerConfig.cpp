@@ -34,7 +34,7 @@ ServerConfig parse_server_config(int argc, char *argv[]) {
 	}
 
 	int port = 0;
-	int num_expert_engineers = 0;
+	int num_expert_engineers = 1;
 
 	if (!parse_int(argv[1], port) || port <= 0 || port > 65535) {
 		std::cerr << "Invalid port: " << argv[1] << std::endl;
