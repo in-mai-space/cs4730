@@ -28,8 +28,8 @@ static bool parse_int(const char *value, int &out) {
 }
 
 ServerConfig parse_server_config(int argc, char *argv[]) {
-	if (argc != 3) {
-		std::cerr << "Usage: " << argv[0] << " <server_port> <num_expert_engineers>" << std::endl;
+	if (argc < 2 || argc > 3) {
+		std::cerr << "Usage: " << argv[0] << " <server_port> [num_expert_engineers]" << std::endl;
 		exit(1);
 	}
 
@@ -40,9 +40,12 @@ ServerConfig parse_server_config(int argc, char *argv[]) {
 		std::cerr << "Invalid port: " << argv[1] << std::endl;
 		exit(1);
 	}
-	if (!parse_int(argv[2], num_expert_engineers) || num_expert_engineers <= 0) {
-		std::cerr << "Invalid number of expert engineers: " << argv[2] << std::endl;
-		exit(1);
+	
+	if (argc == 3) {
+		if (!parse_int(argv[2], num_expert_engineers) || num_expert_engineers < 0) {
+			std::cerr << "Invalid number of expert engineers: " << argv[2] << std::endl;
+			exit(1);
+		}
 	}
 
 	return ServerConfig(port, &num_expert_engineers);
