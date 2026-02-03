@@ -1,6 +1,9 @@
 #include "../include/ServerStub.h"
 
 #include <unistd.h>
+#include <queue>
+#include <thread>
+#include <chrono>
 
 #include <iostream>
 
@@ -9,36 +12,56 @@
 
 void ServerStub::init(ServerSocket* socket) { this->socket = socket; }
 
-void ServerStub::handle_client(int client_fd) {
-    std::cout << "Handling client connection: " << client_fd << std::endl;
+Robot ServerStub::process_order(const RobotOrder& order, int engineer_id) {
+    Robot robot(order.customer_id, order.order_number, order.robot_type, engineer_id, -1); // -1 since expert_id is not assigned yet
+    return robot;
+}
+
+void ServerStub::attach_special_module(std::promise<Robot>&& promise, int expert_id) {
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    Robot modified_robot = promise.get_future().get();
+    modified_robot.expert_id = expert_id;
+    promise.set_value(modified_robot);
+}
+
+void ServerStub::handle_client(int client_fd, int engineer_id, std::shared_ptr<std::queue<std::promise<Robot>>>& jobQueue, std::mutex &mtx, std::condition_variable &cv) {
+    RobotOrder order(0, 0, 0);
 
     while (true) {
-        RobotOrder order(0, 0, 0);
-
         if (!socket->receive(order, client_fd)) {
-            std::cout << "Client " << client_fd << " disconnected" << std::endl;
             break;
         }
 
-        std::cout << "Received order - Customer: " << order.customer_id
-                  << ", Order: " << order.order_number
-                  << ", Type: " << order.robot_type << std::endl;
+        Robot response = process_order(order, engineer_id);
 
-        Robot response = process_order(order);
+        if (is_special_robot(response.robot_type)) {
+            std::promise<Robot> completion_promise;
+            std::future<Robot> completion_future = completion_promise.get_future();
+            {
+                std::lock_guard<std::mutex> lock(mtx);
+                jobQueue->push(std::move(completion_promise));
+            }
+            cv.notify_one();
+            response = completion_future.get();
+        }
 
         if (!socket->send(response, client_fd)) {
             std::cout << "Failed to send response to client " << client_fd
                       << std::endl;
             break;
         }
-
-        std::cout << "Sent robot response to client " << client_fd << std::endl;
     }
 
     close(client_fd);
 }
 
-Robot ServerStub::process_order(const RobotOrder& order) {
-    Robot robot(order.customer_id, order.order_number, order.robot_type, 1, 1);
-    return robot;
+bool ServerStub::is_special_robot(int robot_type) {
+    switch (robot_type) {
+        case 1:
+            return true;
+        case 0:
+            return false;
+        default:
+            throw std::invalid_argument("Invalid robot type");
+    }
 }

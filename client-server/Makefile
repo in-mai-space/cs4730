@@ -166,13 +166,3 @@ debug-server: server_binary
 debug-client: client_binary
 	@echo "Starting client in debugger..."
 	lldb -o "run 127.0.0.1 8080 3 5 0" ./client_binary
-
-# Install development tools for macOS
-install-tools:
-	@echo "Installing development tools for macOS..."
-	@if command -v brew >/dev/null 2>&1; then \
-		brew install clang-format llvm; \
-		echo "Tools installed successfully."; \
-	else \
-		echo "Homebrew not found. Install from: https://brew.sh/"; \
-	fi

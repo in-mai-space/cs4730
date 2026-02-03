@@ -10,7 +10,19 @@ class ClientConfig {
     static const int DEFAULT_SERVER_PORT = 8080;
     static const std::string DEFAULT_SERVER_IP;
 
+    /**
+     * Default constructor initializing with default values.
+     */
     ClientConfig();
+
+    /**
+     * Parameterized constructor to initialize all configuration fields.
+     * @param server_ip The server IP address.
+     * @param server_port The server port number.
+     * @param customers The number of customers.
+     * @param orders The number of orders per customer.
+     * @param robot_type The type of robot (0 or 1).
+     */
     ClientConfig(std::string server_ip, int server_port, int customers,
                  int orders, int robot_type);
 
