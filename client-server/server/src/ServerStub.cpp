@@ -13,11 +13,7 @@
 void ServerStub::init(ServerSocket* socket) { this->socket = socket; }
 
 Robot ServerStub::process_order(const RobotOrder& order, int engineer_id) {
-    Robot robot(order.customer_id, order.order_number, order.robot_type, engineer_id, -1);
-    std::cout << "Processed order - Customer: " << order.customer_id
-              << ", Order: " << order.order_number
-              << ", Type: " << order.robot_type
-              << ", Engineer ID: " << engineer_id << std::endl;
+    Robot robot(order.customer_id, order.order_number, order.robot_type, engineer_id, -1); // -1 since expert_id is not assigned yet
     return robot;
 }
 
@@ -26,24 +22,13 @@ void ServerStub::attach_special_module(std::promise<Robot>&& promise, int expert
     Robot modified_robot = promise.get_future().get();
     modified_robot.expert_id = expert_id;
     promise.set_value(modified_robot);
-    std::cout << "Attached special module - Customer: " << modified_robot.customer_id
-              << ", Order: " << modified_robot.order_number
-              << ", Expert ID: " << expert_id << std::endl;
 }
 
-void ServerStub::handle_client(int client_fd, int engineer_id, std::shared_ptr<std::queue<std::promise<Robot>>>& jobQueue, std::mutex &mtx, std::condition_variable &cv) {
-    std::cout << "Handling client connection: " << client_fd << " with engineer ID: " << engineer_id << std::endl;
-
+void ServerStub::handle_client(RobotOrder& order, int client_fd, int engineer_id, std::shared_ptr<std::queue<std::promise<Robot>>>& jobQueue, std::mutex &mtx, std::condition_variable &cv) {
     while (true) {
-        RobotOrder order(0, 0, 0);
-
         if (!socket->receive(order, client_fd)) {
             break;
         }
-
-        std::cout << "Received order - Customer: " << order.customer_id
-                  << ", Order: " << order.order_number
-                  << ", Type: " << order.robot_type << std::endl;
 
         Robot response = process_order(order, engineer_id);
 
@@ -72,7 +57,9 @@ bool ServerStub::is_special_robot(int robot_type) {
     switch (robot_type) {
         case 1:
             return true;
-        default:
+        case 0:
             return false;
+        default:
+            throw std::invalid_argument("Invalid robot type");
     }
 }

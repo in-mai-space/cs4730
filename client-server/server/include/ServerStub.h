@@ -19,7 +19,7 @@ class ServerStub {
      * @param client_fd The file descriptor of the connected client.
      * @param engineer_id The ID of the engineer handling the client.
      */
-    void handle_client(int client_fd, int engineer_id, std::shared_ptr<std::queue<std::promise<Robot>>>& jobQueue, std::mutex &mtx, std::condition_variable &cv);
+    void handle_client(RobotOrder& order, int client_fd, int engineer_id, std::shared_ptr<std::queue<std::promise<Robot>>>& jobQueue, std::mutex &mtx, std::condition_variable &cv);
 
     /**
      * Processes a RobotOrder and generates a Robot response.

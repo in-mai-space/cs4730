@@ -14,7 +14,7 @@
 void start_server(const ServerConfig& config);
 void handle_client_thread(ServerStub* stub, int client_fd, int engineer_id, std::shared_ptr<std::queue<std::promise<Robot>>>& jobQueue, std::mutex &mtx, std::condition_variable &cv);
 void initialize_engineer_threads(int id, ServerSocket& server_socket, ServerStub& server_stub, std::vector<std::thread>& engineer_threads, std::shared_ptr<std::queue<std::promise<Robot>>>& jobQueue, std::mutex &mtx, std::condition_variable &cv);
-void initialize_expert_engineer_threads(int start_id, std::vector<std::thread>& expert_engineer_threads, ServerStub& server_stub, int num_expert_engineers, std::mutex &mtx,
+void initialize_expert_engineer_thread_pools(int start_id, std::vector<std::thread>& expert_engineer_threads, ServerStub& server_stub, int num_expert_engineers, std::mutex &mtx,
                              std::shared_ptr<std::queue<std::promise<Robot>>>& jobQueue, std::condition_variable &cv, bool* shutdown_flag);
 
 int main(int argc, char* argv[]) {
@@ -35,6 +35,7 @@ void start_server(const ServerConfig& config) {
 
     ServerStub server_stub;
     server_stub.init(&server_socket);
+    
     std::vector<std::thread> engineer_threads;
     std::vector<std::thread> expert_engineer_threads;
     std::mutex mtx;
@@ -45,11 +46,12 @@ void start_server(const ServerConfig& config) {
     std::cout << "Server is ready to accept connections..." << std::endl;
 
     initialize_engineer_threads(id, server_socket, server_stub, engineer_threads, jobQueue, mtx, cv);
-    initialize_expert_engineer_threads(id, expert_engineer_threads, server_stub, config.expert_engineers, mtx, jobQueue, cv, nullptr);
+    initialize_expert_engineer_thread_pools(id, expert_engineer_threads, server_stub, config.expert_engineers, mtx, jobQueue, cv, nullptr);
 }
 
 void handle_client_thread(ServerStub* stub, int client_fd, int engineer_id, std::shared_ptr<std::queue<std::promise<Robot>>>& jobQueue, std::mutex &mtx, std::condition_variable &cv) {
-    stub->handle_client(client_fd, engineer_id, jobQueue, mtx, cv);
+    RobotOrder order(0, 0, 0);
+    stub->handle_client(order, client_fd, engineer_id, jobQueue, mtx, cv);
 }
 
 // accept new connections and waits for new connections from client in a loop
@@ -57,6 +59,7 @@ void initialize_engineer_threads(int id, ServerSocket& server_socket, ServerStub
     int engineer_id = id; // starting engineer ID
 
     while (true) {
+        // accept new client connection
         int client_fd = server_socket.accept();
         if (client_fd < 0) {
             std::cerr << "Failed to accept client" << std::endl;
@@ -65,6 +68,7 @@ void initialize_engineer_threads(int id, ServerSocket& server_socket, ServerStub
 
         std::cout << "New client connected: " << client_fd << std::endl;
 
+        // create a new engineer thread to handle the client
         std::thread engineer_thread(handle_client_thread, &server_stub, client_fd, engineer_id++, std::ref(jobQueue), std::ref(mtx), std::ref(cv));
         engineer_thread.detach();
         engineer_threads.push_back(std::move(engineer_thread));
@@ -93,7 +97,7 @@ void expert_engineers_wait_and_execute_job(int id, std::condition_variable &cv,
     }
 }
 
-void initialize_expert_engineer_threads(int start_id, std::vector<std::thread>& expert_engineer_threads, ServerStub& server_stub, int num_expert_engineers, std::mutex &mtx,
+void initialize_expert_engineer_thread_pools(int start_id, std::vector<std::thread>& expert_engineer_threads, ServerStub& server_stub, int num_expert_engineers, std::mutex &mtx,
                              std::shared_ptr<std::queue<std::promise<Robot>>>& jobQueue, std::condition_variable &cv, bool* shutdown_flag) {
     for (int i = 0; i < num_expert_engineers; ++i) {
         std::thread expert_thread(expert_engineers_wait_and_execute_job, start_id + i, std::ref(cv), std::ref(mtx), std::ref(jobQueue), std::ref(server_stub), shutdown_flag);
