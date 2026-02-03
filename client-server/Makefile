@@ -8,37 +8,30 @@
 CC := gcc
 CXX := g++
 
-# $(wildcard *.h) finds all file names with patterns (random string + ".h")
-HDRS := $(wildcard *.h)		
-SRCS := $(wildcard *.cpp)	
-OBJS := $(SRCS:.cpp=.o)		# replaces .cpp extension to .o (e.g., main.cpp -> main.o)
-				# and stores the names to OBJS
+# Source and header files for each component
+SVR_HDRS := $(wildcard server/include/*.h)
+SVR_SRCS := $(wildcard server/src/*.cpp)
+SVR_OBJS := $(notdir $(SVR_SRCS:.cpp=.o))
 
-# $(wildcard Server*.h) finds all file names with patterns ("Server" + random string + ".h")
-SVR_HDRS := $(wildcard Server*.h)	
-SVR_SRCS := $(wildcard Server*.cpp)
-SVR_OBJS := $(SVR_SRCS:.cpp=.o)
+CLNT_HDRS := $(wildcard client/include/*.h)
+CLNT_SRCS := $(wildcard client/src/*.cpp)
+CLNT_OBJS := $(notdir $(CLNT_SRCS:.cpp=.o))
 
-# $(wildcard Client*.h) finds all file names with patterns ("Client" + random string + ".h")
-CLNT_HDRS := $(wildcard Client*.h)
-CLNT_SRCS := $(wildcard Client*.cpp)
-CLNT_OBJS := $(CLNT_SRCS:.cpp=.o)
-
-# $(filter-out X Y Z, A) removes X Y and Z from A if X Y Z are found in A
-CMN_HDRS := $(filter-out $(SVR_HDRS) $(CLNT_HDRS), $(HDRS))
-CMN_SRCS := $(filter-out $(SVR_SRCS) $(CLNT_SRCS), $(SRCS))
-CMN_OBJS := $(CMN_SRCS:.cpp=.o)
+CMN_HDRS := $(wildcard common/include/*.h)
+CMN_SRCS := $(wildcard common/src/*.cpp)
+CMN_OBJS := $(notdir $(CMN_SRCS:.cpp=.o))
 
 
 # -Wall prints: all warnings
-# -std=c++11: use of C++11
-CFLAGS := -Wall -std=c++11 
+# -std=c++11: use of C++11  
+# -I flags: include directories for header files
+CFLAGS := -Wall -std=c++11 -Iclient/include -Iserver/include -Icommon/include 
 
 # -pthread: use of posix threads (necessary to use std::thread or pthreads)
 LFLAGS := -pthread 
 
-# we are building two target binaries: server and client
-TARGET := server client
+# we are building two target binaries: server_binary and client_binary
+TARGET := server_binary client_binary
 
 #-------------------------------------------------------------------------------
 # 2. What to build and how to build them
@@ -89,7 +82,7 @@ debug: $(TARGET)
 #    in the folder the make program won't be able to execute the g++ command and
 #    it will look for another rules to create the object (.o) files
 
-server: $(SVR_OBJS) $(CMN_OBJS)
+server_binary: $(SVR_OBJS) $(CMN_OBJS)
 	$(CXX) $(LFLAGS) -o $@ $^ 
 
 # This rule defines how to build the server specific object files.
@@ -98,15 +91,15 @@ server: $(SVR_OBJS) $(CMN_OBJS)
 # Since we will have all the files the build command will be executed
 #   g++ -Wall -std=c++0x -c ServerXXX1.cpp ServerXXX2.cpp ...
 
-$(SVR_OBJS): $(SVR_SRCS) $(SVR_HDRS)
+$(SVR_OBJS): $(SVR_SRCS) $(SVR_HDRS) $(CMN_HDRS)
 	$(CXX) $(CFLAGS) $(DFLAGS) -c $(SVR_SRCS)
 
 
 # Same applies to the client program.
-client: $(CLNT_OBJS) $(CMN_OBJS)
+client_binary: $(CLNT_OBJS) $(CMN_OBJS)
 	$(CXX) $(LFLAGS) -o $@ $^ 
 
-$(CLNT_OBJS): $(CLNT_SRCS) $(CLNT_HDRS)
+$(CLNT_OBJS): $(CLNT_SRCS) $(CLNT_HDRS) $(CMN_HDRS)
 	$(CXX) $(CFLAGS) $(DFLAGS) -c $(CLNT_SRCS)
 	
 
@@ -119,10 +112,67 @@ $(CMN_OBJS): $(CMN_SRCS) $(CMN_HDRS)
 # which include .o files and the compiled binary.
 
 clean:
-	rm -rf *.o $(TARGET)
+	rm -f *.o server_binary client_binary
 
-# ".PHONY:" indicates "clean" and "debug" are not target files to build but 
+# ".PHONY:" indicates these are not target files to build but 
 # rather special commands.
 
-.PHONY: clean debug
+.PHONY: clean debug run-server run-client format lint help
 
+#-------------------------------------------------------------------------------
+# 3. Convenient commands for development
+#-------------------------------------------------------------------------------
+
+# Start server with default settings (port 8080, 2 engineers)
+run-server: server_binary
+	@echo "Starting server on port 8080 with 2 expert engineers..."
+	./server_binary 8080 2
+
+# Start client with default settings (3 customers, 5 orders each, robot type 0)
+run-client: client_binary
+	@echo "Starting client with 3 customers, 5 orders each, robot type 0..."
+	./client_binary 127.0.0.1 8080 3 5 0
+
+# Start client with custom settings (usage: make run-client-custom IP=127.0.0.1 PORT=8080 CUSTOMERS=3 ORDERS=5 ROBOT=0)
+run-client-custom: client_binary
+	./client_binary $(IP) $(PORT) $(CUSTOMERS) $(ORDERS) $(ROBOT)
+
+# Format code using clang-format (if available)
+format:
+	@echo "Formatting C++ code..."
+	@if command -v clang-format >/dev/null 2>&1; then \
+		find . -name "*.cpp" -o -name "*.h" | xargs clang-format -i -style="{BasedOnStyle: Google, IndentWidth: 4, TabWidth: 4}"; \
+		echo "Code formatted successfully."; \
+	else \
+		echo "clang-format not found. Install with: brew install clang-format"; \
+	fi
+
+# Lint code using clang-tidy (if available)
+lint:
+	@echo "Linting C++ code..."
+	@if command -v clang-tidy >/dev/null 2>&1; then \
+		find . -name "*.cpp" | xargs clang-tidy -checks="-*,readability-*,performance-*,modernize-*" --; \
+		echo "Code linted successfully."; \
+	else \
+		echo "clang-tidy not found. Install with: brew install llvm"; \
+	fi
+
+# Debug server with lldb
+debug-server: server_binary
+	@echo "Starting server in debugger..."
+	lldb -o "run 8080 2" ./server_binary
+
+# Debug client with lldb
+debug-client: client_binary
+	@echo "Starting client in debugger..."
+	lldb -o "run 127.0.0.1 8080 3 5 0" ./client_binary
+
+# Install development tools for macOS
+install-tools:
+	@echo "Installing development tools for macOS..."
+	@if command -v brew >/dev/null 2>&1; then \
+		brew install clang-format llvm; \
+		echo "Tools installed successfully."; \
+	else \
+		echo "Homebrew not found. Install from: https://brew.sh/"; \
+	fi
