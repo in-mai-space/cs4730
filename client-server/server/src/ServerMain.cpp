@@ -50,8 +50,7 @@ void start_server(const ServerConfig& config) {
 }
 
 void handle_client_thread(ServerStub* stub, int client_fd, int engineer_id, std::shared_ptr<std::queue<std::promise<Robot>>>& jobQueue, std::mutex &mtx, std::condition_variable &cv) {
-    RobotOrder order(0, 0, 0);
-    stub->handle_client(order, client_fd, engineer_id, jobQueue, mtx, cv);
+    stub->handle_client(client_fd, engineer_id, jobQueue, mtx, cv);
 }
 
 // accept new connections and waits for new connections from client in a loop

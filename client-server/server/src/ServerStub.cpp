@@ -24,7 +24,9 @@ void ServerStub::attach_special_module(std::promise<Robot>&& promise, int expert
     promise.set_value(modified_robot);
 }
 
-void ServerStub::handle_client(RobotOrder& order, int client_fd, int engineer_id, std::shared_ptr<std::queue<std::promise<Robot>>>& jobQueue, std::mutex &mtx, std::condition_variable &cv) {
+void ServerStub::handle_client(int client_fd, int engineer_id, std::shared_ptr<std::queue<std::promise<Robot>>>& jobQueue, std::mutex &mtx, std::condition_variable &cv) {
+    RobotOrder order(0, 0, 0);
+
     while (true) {
         if (!socket->receive(order, client_fd)) {
             break;
