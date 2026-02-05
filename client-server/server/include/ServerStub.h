@@ -6,6 +6,12 @@
 #include <queue>
 #include <future>
 
+struct ExpertRequestQueue {
+    std::queue<std::promise<Robot>> jobQueue;
+    std::mutex mtx;
+    std::condition_variable cv;
+};
+
 class ServerStub {
    public:  
     /**
@@ -18,8 +24,9 @@ class ServerStub {
      * Handles client requests in a loop until the client disconnects.
      * @param client_fd The file descriptor of the connected client.
      * @param engineer_id The ID of the engineer handling the client.
+     * @param expertQueue The shared expert request queue.
      */
-    void handle_client(int client_fd, int engineer_id, std::shared_ptr<std::queue<std::promise<Robot>>>& jobQueue, std::mutex &mtx, std::condition_variable &cv);
+    void handle_client(int client_fd, int engineer_id, ExpertRequestQueue& expertQueue);
 
     /**
      * Processes a RobotOrder and generates a Robot response.
@@ -34,6 +41,22 @@ class ServerStub {
      * @param expert_id The ID of the expert engineer attaching the module.
      */
     void attach_special_module(std::promise<Robot>&& promise, int expert_id);
+
+    /**
+     * Receives an order from the client through the socket.
+     * @param order The RobotOrder object to populate.
+     * @param client_fd The file descriptor of the connected client.
+     * @return true if successful, false otherwise.
+     */
+    bool receive_order(RobotOrder& order, int client_fd);
+
+    /**
+     * Ships a robot to the client through the socket.
+     * @param robot The Robot object to send.
+     * @param client_fd The file descriptor of the connected client.
+     * @return true if successful, false otherwise.
+     */
+    bool ship_robot(const Robot& robot, int client_fd);
 
    private:
     ServerSocket* socket;

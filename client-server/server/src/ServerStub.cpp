@@ -24,11 +24,11 @@ void ServerStub::attach_special_module(std::promise<Robot>&& promise, int expert
     promise.set_value(modified_robot);
 }
 
-void ServerStub::handle_client(int client_fd, int engineer_id, std::shared_ptr<std::queue<std::promise<Robot>>>& jobQueue, std::mutex &mtx, std::condition_variable &cv) {
+void ServerStub::handle_client(int client_fd, int engineer_id, ExpertRequestQueue& expertQueue) {
     RobotOrder order(0, 0, 0);
 
     while (true) {
-        if (!socket->receive(order, client_fd)) {
+        if (!receive_order(order, client_fd)) {
             break;
         }
 
@@ -38,14 +38,14 @@ void ServerStub::handle_client(int client_fd, int engineer_id, std::shared_ptr<s
             std::promise<Robot> completion_promise;
             std::future<Robot> completion_future = completion_promise.get_future();
             {
-                std::lock_guard<std::mutex> lock(mtx);
-                jobQueue->push(std::move(completion_promise));
+                std::lock_guard<std::mutex> lock(expertQueue.mtx);
+                expertQueue.jobQueue.push(std::move(completion_promise));
             }
-            cv.notify_one();
+            expertQueue.cv.notify_one();
             response = completion_future.get();
         }
 
-        if (!socket->send(response, client_fd)) {
+        if (!ship_robot(response, client_fd)) {
             std::cout << "Failed to send response to client " << client_fd
                       << std::endl;
             break;
@@ -64,4 +64,12 @@ bool ServerStub::is_special_robot(int robot_type) {
         default:
             throw std::invalid_argument("Invalid robot type");
     }
+}
+
+bool ServerStub::receive_order(RobotOrder& order, int client_fd) {
+    return socket && socket->receive(order, client_fd);
+}
+
+bool ServerStub::ship_robot(const Robot& robot, int client_fd) {
+    return socket && socket->send(robot, client_fd);
 }
