@@ -38,8 +38,8 @@ void ServerStub::handle_client(int client_fd, int engineer_id, ExpertRequestQueu
 
         Robot response = process_order(order, engineer_id);
         std::cout << "[Engineer " << engineer_id << "] Processed order, robot info: customer_id=" << response.customer_id << ", order_number=" << response.order_number << ", robot_type=" << response.robot_type << ", engineer_id=" << response.engineer_id << std::endl;
-
         if (is_special_robot(response.robot_type)) {
+            std::cout << "[Engineer " << engineer_id << "] Robot is SPECIAL." << std::endl;
             std::cout << "[Engineer " << engineer_id << "] Special robot requested, sending to expert queue..." << std::endl;
             ExpertRequest req{response, std::promise<Robot>()};
             std::future<Robot> completion_future = req.promise.get_future();
@@ -50,6 +50,8 @@ void ServerStub::handle_client(int client_fd, int engineer_id, ExpertRequestQueu
             expertQueue.cv.notify_one();
             response = completion_future.get();
             std::cout << "[Engineer " << engineer_id << "] Received robot with expert module, expert_id=" << response.expert_id << std::endl;
+        } else {
+            std::cout << "[Engineer " << engineer_id << "] Robot is REGULAR." << std::endl;
         }
 
         std::cout << "[Engineer " << engineer_id << "] Shipping robot to client " << client_fd << std::endl;
