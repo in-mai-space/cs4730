@@ -9,6 +9,11 @@
 #include "../../common/include/RobotOrder.h"
 #include "ClientSocket.h"
 
+struct LatencyRecorder {
+    std::vector<long long> latencies;
+    std::mutex mutex;
+};
+
 class ClientStub {
    public:
     /**
@@ -16,17 +21,17 @@ class ClientStub {
      * @param ip The server IP address.
      * @param port The server port number.
      */
-    void init(std::string ip, int port);
+    void init(const std::string& ip, int port);
 
     /**
      * Places orders to the server and records latencies.
      * @param details The template RobotOrder containing order details.
      * @param customer_id The ID of the customer placing the orders.
-     * @param latencies A vector to store the latencies of each order.
+     * @param recorder A LatencyRecorder struct to store the latencies of each order.
      * @param latency_mutex A mutex to protect access to the latencies vector.
      */
-    void order(RobotOrder details, int customer_id,
-               std::vector<long long>& latencies, std::mutex& latency_mutex);
+    // Returns true if all orders succeed, false otherwise
+    bool order(const RobotOrder& details, int customer_id, LatencyRecorder& recorder);
 
    private:
     ClientSocket socket;

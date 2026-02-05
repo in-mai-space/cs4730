@@ -15,7 +15,7 @@ void start_client(ClientConfig& config);
 void initialize_customer_threads(
     ClientConfig& cfg, std::vector<std::thread>& customer_threads,
     std::vector<std::shared_ptr<ClientStub>>& client_stubs,
-    std::vector<long long>& latencies, std::mutex& latency_mutex);
+    LatencyRecorder& recorder);
 
 int main(int argc, char* argv[]) {
     ClientConfig cfg = parse_and_validate_client_config(argc, argv);
@@ -29,19 +29,17 @@ int main(int argc, char* argv[]) {
 void start_client(ClientConfig& cfg) {
     std::vector<std::thread> customer_threads;
     std::vector<std::shared_ptr<ClientStub>> client_stubs;
-    std::vector<long long> latencies;
-    std::mutex latency_mutex;
+    LatencyRecorder recorder;
 
     // record start time for throughput calculation
     auto start_time = std::chrono::high_resolution_clock::now();
 
-    initialize_customer_threads(cfg, customer_threads, client_stubs, latencies,
-                                latency_mutex);
+    initialize_customer_threads(cfg, customer_threads, client_stubs, recorder);
 
     // record end time for throughput calculation
     auto end_time = std::chrono::high_resolution_clock::now();
 
-    auto logger = ClientLogger(latencies);
+    auto logger = ClientLogger(recorder.latencies);
     logger.log_performance_statistics(start_time, end_time);
 }
 
@@ -51,7 +49,7 @@ void start_client(ClientConfig& cfg) {
 void initialize_customer_threads(
     ClientConfig& cfg, std::vector<std::thread>& customer_threads,
     std::vector<std::shared_ptr<ClientStub>>& client_stubs,
-    std::vector<long long>& latencies, std::mutex& latency_mutex) {
+    LatencyRecorder& recorder) {
     // create the customer threads as many as the specified customer number
     for (int i = 0; i < cfg.customers; i++) {
         // each customer should have its own client stub instance
@@ -62,8 +60,7 @@ void initialize_customer_threads(
 
         RobotOrder order(i, cfg.orders, cfg.robot_type);
         // each customer thread should have a unique customer id i
-        std::thread t(&ClientStub::order, stub, order, i, std::ref(latencies),
-                      std::ref(latency_mutex));
+        std::thread t(&ClientStub::order, stub, order, i, std::ref(recorder));
         customer_threads.push_back(std::move(t));
     }
 
