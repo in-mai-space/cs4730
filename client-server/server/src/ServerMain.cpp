@@ -45,8 +45,8 @@ void start_server(const ServerConfig& config) {
 
     std::cout << "Server is ready to accept connections..." << std::endl;
 
-    initialize_engineer_threads(id, server_socket, server_stub, engineer_threads, expertQueue);
     initialize_expert_engineer_thread_pools(id, expert_engineer_threads, server_stub, config.expert_engineers, expertQueue);
+    initialize_engineer_threads(id, server_socket, server_stub, engineer_threads, expertQueue);
 }
 
 void handle_client_thread(ServerStub* stub, int client_fd, int engineer_id, ExpertRequestQueue& expertQueue) {
@@ -75,6 +75,7 @@ void initialize_engineer_threads(int id, ServerSocket& server_socket, ServerStub
 }
 
 void expert_engineers_wait_and_execute_job(int id, ExpertRequestQueue& expertQueue, ServerStub& server_stub) {
+    std::cout << "[Expert Engineer " << id << "] Thread started." << std::endl;
     while (true) {
         std::unique_lock<std::mutex> lock(expertQueue.mtx);
 
@@ -82,16 +83,18 @@ void expert_engineers_wait_and_execute_job(int id, ExpertRequestQueue& expertQue
             expertQueue.cv.wait(lock);
         }
         
-        auto robot_order = std::move(expertQueue.jobQueue.front());
+        std::cout << "[Expert Engineer " << id << "] Dequeued a request." << std::endl;
+        ExpertRequest req = std::move(expertQueue.jobQueue.front());
         expertQueue.jobQueue.pop();
 
         lock.unlock();
-        server_stub.attach_special_module(std::move(robot_order), id);
+        server_stub.attach_special_module(std::move(req), id);
     }
 }
 
 void initialize_expert_engineer_thread_pools(int start_id, std::vector<std::thread>& expert_engineer_threads, ServerStub& server_stub, int num_expert_engineers, ExpertRequestQueue& expertQueue) {
     for (int i = 0; i < num_expert_engineers; ++i) {
+        std::cout << "[Expert Engineer " << (start_id + i) << "] Initializing thread." << std::endl;
         std::thread expert_thread(expert_engineers_wait_and_execute_job, start_id + i, std::ref(expertQueue), std::ref(server_stub));
         expert_thread.detach();
         expert_engineer_threads.push_back(std::move(expert_thread));

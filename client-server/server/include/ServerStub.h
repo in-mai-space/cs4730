@@ -6,8 +6,14 @@
 #include <queue>
 #include <future>
 
+// Struct for expert engineer requests
+struct ExpertRequest {
+    Robot robot;
+    std::promise<Robot> promise;
+};
+
 struct ExpertRequestQueue {
-    std::queue<std::promise<Robot>> jobQueue;
+    std::queue<ExpertRequest> jobQueue;
     std::mutex mtx;
     std::condition_variable cv;
 };
@@ -37,10 +43,10 @@ class ServerStub {
 
     /**
      * Attaches a special module to the given Robot.
-     * @param promise The promise to fulfill with the modified robot.
+     * @param req The expert request containing the robot and promise.
      * @param expert_id The ID of the expert engineer attaching the module.
      */
-    void attach_special_module(std::promise<Robot>&& promise, int expert_id);
+    void attach_special_module(ExpertRequest req, int expert_id);
 
     /**
      * Receives an order from the client through the socket.
