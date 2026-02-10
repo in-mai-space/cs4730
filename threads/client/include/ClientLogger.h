@@ -7,7 +7,8 @@ class ClientLogger {
    public:
     ClientLogger(std::vector<long long>& latencies);
     /**
-     * Logs performance statistics including average, min, max latencies and throughput.
+     * Logs performance statistics including average, min, max latencies and
+     * throughput.
      * @param start_time The start time of the measurement period.
      * @param end_time The end time of the measurement period.
      */

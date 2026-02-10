@@ -8,9 +8,9 @@
 
 class ClientSocket {
    public:
-   /**
-    * Constructor
-    */
+    /**
+     * Constructor
+     */
     ClientSocket();
 
     /**
