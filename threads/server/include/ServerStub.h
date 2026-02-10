@@ -1,10 +1,11 @@
 #ifndef SERVERSTUB_H
 #define SERVERSTUB_H
+#include <future>
+#include <queue>
+
 #include "../../common/include/Robot.h"
 #include "../../common/include/RobotOrder.h"
 #include "ServerSocket.h"
-#include <queue>
-#include <future>
 
 // Struct for expert engineer requests
 struct ExpertRequest {
@@ -19,7 +20,7 @@ struct ExpertRequestQueue {
 };
 
 class ServerStub {
-   public:  
+   public:
     /**
      * Initializes the server stub with the given server socket.
      * @param socket Pointer to the ServerSocket instance.
@@ -32,7 +33,8 @@ class ServerStub {
      * @param engineer_id The ID of the engineer handling the client.
      * @param expertQueue The shared expert request queue.
      */
-    void handle_client(int client_fd, int engineer_id, ExpertRequestQueue& expertQueue);
+    void handle_client_request(int client_fd, int engineer_id,
+                               ExpertRequestQueue& expertQueue);
 
     /**
      * Processes a RobotOrder and generates a Robot response.

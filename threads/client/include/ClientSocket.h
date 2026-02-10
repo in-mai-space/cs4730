@@ -8,11 +8,10 @@
 
 class ClientSocket {
    public:
-   /**
-    * Constructor and Destructor
-    */
+    /**
+     * Constructor
+     */
     ClientSocket();
-    ~ClientSocket();
 
     /**
      * Connects to the server at the specified IP and port.

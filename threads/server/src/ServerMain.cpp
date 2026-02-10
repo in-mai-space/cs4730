@@ -1,20 +1,26 @@
+#include <unistd.h>
+
+#include <condition_variable>
+#include <future>
 #include <iostream>
+#include <mutex>
+#include <queue>
 #include <thread>
 #include <vector>
-#include <unistd.h>
-#include <queue>
-#include <condition_variable>
-#include <mutex>
-#include <future>
 
 #include "../include/ServerConfig.h"
 #include "../include/ServerSocket.h"
 #include "../include/ServerStub.h"
 
 void start_server(const ServerConfig& config);
-void handle_client_thread(ServerStub* stub, int client_fd, int engineer_id, ExpertRequestQueue& expertQueue);
-void initialize_engineer_threads(int id, ServerSocket& server_socket, ServerStub& server_stub, ExpertRequestQueue& expertQueue);
-void initialize_expert_engineer_thread_pools(ServerStub& server_stub, int num_expert_engineers, ExpertRequestQueue& expertQueue);
+void handle_client_thread(ServerStub* stub, int client_fd, int engineer_id,
+                          ExpertRequestQueue& expertQueue);
+void initialize_engineer_threads(int id, ServerSocket& server_socket,
+                                 ServerStub& server_stub,
+                                 ExpertRequestQueue& expertQueue);
+void initialize_expert_engineer_thread_pools(ServerStub& server_stub,
+                                             int num_expert_engineers,
+                                             ExpertRequestQueue& expertQueue);
 
 int main(int argc, char* argv[]) {
     ServerConfig cfg = parse_server_config(argc, argv);
@@ -34,26 +40,32 @@ void start_server(const ServerConfig& config) {
 
     ServerStub server_stub;
     server_stub.init(&server_socket);
-    
+
     std::vector<std::thread> expert_engineer_threads;
     std::mutex mtx;
     std::condition_variable cv;
-    std::shared_ptr<std::queue<std::promise<Robot>>> jobQueue = std::make_shared<std::queue<std::promise<Robot>>>();
+    std::shared_ptr<std::queue<std::promise<Robot>>> jobQueue =
+        std::make_shared<std::queue<std::promise<Robot>>>();
     ExpertRequestQueue expertQueue;
 
     std::cout << "Server is ready to accept connections..." << std::endl;
 
-    initialize_expert_engineer_thread_pools(server_stub, config.expert_engineers, expertQueue);
-    initialize_engineer_threads(config.expert_engineers, server_socket, server_stub, expertQueue);
+    initialize_expert_engineer_thread_pools(
+        server_stub, config.expert_engineers, expertQueue);
+    initialize_engineer_threads(config.expert_engineers, server_socket,
+                                server_stub, expertQueue);
 }
 
-void handle_client_thread(ServerStub* stub, int client_fd, int engineer_id, ExpertRequestQueue& expertQueue) {
-    stub->handle_client(client_fd, engineer_id, expertQueue);
+void handle_client_thread(ServerStub* stub, int client_fd, int engineer_id,
+                          ExpertRequestQueue& expertQueue) {
+    stub->handle_client_request(client_fd, engineer_id, expertQueue);
 }
 
 // accept new connections and waits for new connections from client in a loop
-void initialize_engineer_threads(int id, ServerSocket& server_socket, ServerStub& server_stub, ExpertRequestQueue& expertQueue) {
-    int engineer_id = id; // starting engineer ID
+void initialize_engineer_threads(int id, ServerSocket& server_socket,
+                                 ServerStub& server_stub,
+                                 ExpertRequestQueue& expertQueue) {
+    int engineer_id = id;  // starting engineer ID
 
     while (true) {
         // accept new client connection
@@ -66,12 +78,16 @@ void initialize_engineer_threads(int id, ServerSocket& server_socket, ServerStub
         std::cout << "New client connected: " << client_fd << std::endl;
 
         // create a new engineer thread to handle the client
-        std::thread engineer_thread(handle_client_thread, &server_stub, client_fd, engineer_id++, std::ref(expertQueue));
+        std::thread engineer_thread(handle_client_thread, &server_stub,
+                                    client_fd, engineer_id++,
+                                    std::ref(expertQueue));
         engineer_thread.detach();
     }
 }
 
-void expert_engineers_wait_and_execute_job(int id, ExpertRequestQueue& expertQueue, ServerStub& server_stub) {
+void expert_engineers_wait_and_execute_job(int id,
+                                           ExpertRequestQueue& expertQueue,
+                                           ServerStub& server_stub) {
     std::cout << "[Expert Engineer " << id << "] Thread started." << std::endl;
     while (true) {
         std::unique_lock<std::mutex> lock(expertQueue.mtx);
@@ -79,8 +95,9 @@ void expert_engineers_wait_and_execute_job(int id, ExpertRequestQueue& expertQue
         while (expertQueue.jobQueue.empty()) {
             expertQueue.cv.wait(lock);
         }
-        
-        std::cout << "[Expert Engineer " << id << "] Dequeued a request." << std::endl;
+
+        std::cout << "[Expert Engineer " << id << "] Dequeued a request."
+                  << std::endl;
         ExpertRequest req = std::move(expertQueue.jobQueue.front());
         expertQueue.jobQueue.pop();
 
@@ -89,10 +106,14 @@ void expert_engineers_wait_and_execute_job(int id, ExpertRequestQueue& expertQue
     }
 }
 
-void initialize_expert_engineer_thread_pools(ServerStub& server_stub, int num_expert_engineers, ExpertRequestQueue& expertQueue) {
+void initialize_expert_engineer_thread_pools(ServerStub& server_stub,
+                                             int num_expert_engineers,
+                                             ExpertRequestQueue& expertQueue) {
     for (int i = 0; i < num_expert_engineers; ++i) {
-        std::cout << "[Expert Engineer " << i << "] Initializing thread." << std::endl;
-        std::thread expert_thread(expert_engineers_wait_and_execute_job, i, std::ref(expertQueue), std::ref(server_stub));
+        std::cout << "[Expert Engineer " << i << "] Initializing thread."
+                  << std::endl;
+        std::thread expert_thread(expert_engineers_wait_and_execute_job, i,
+                                  std::ref(expertQueue), std::ref(server_stub));
         expert_thread.detach();
     }
 }

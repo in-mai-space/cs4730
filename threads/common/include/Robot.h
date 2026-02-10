@@ -5,7 +5,7 @@ class Robot {
    public:
     int customer_id;
     int order_number;
-    int robot_type; // 0 or 1
+    int robot_type;  // 0 or 1
     int engineer_id;
     int expert_id;
 
