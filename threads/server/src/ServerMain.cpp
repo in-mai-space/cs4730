@@ -48,7 +48,7 @@ void start_server(const ServerConfig& config) {
 }
 
 void handle_client_thread(ServerStub* stub, int client_fd, int engineer_id, ExpertRequestQueue& expertQueue) {
-    stub->handle_client(client_fd, engineer_id, expertQueue);
+    stub->handle_client_request(client_fd, engineer_id, expertQueue);
 }
 
 // accept new connections and waits for new connections from client in a loop

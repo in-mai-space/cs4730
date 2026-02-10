@@ -35,6 +35,7 @@ bool ClientStub::order(const RobotOrder& order_template, int customer_id, Latenc
         }
         std::cout << "[Client " << customer_id << "] Received robot for order " << i << ": engineer_id=" << response.engineer_id << ", expert_id=" << response.expert_id << std::endl;
 
+        // accumulate time taken to process an order for calculation at the end
         auto end_time = std::chrono::high_resolution_clock::now();
         auto latency = std::chrono::duration_cast<std::chrono::microseconds>(
                            end_time - start_time)

@@ -8,10 +8,6 @@
 
 ClientSocket::ClientSocket() : sock_fd(-1) {}
 
-ClientSocket::~ClientSocket() {
-    if (sock_fd >= 0) close(sock_fd);
-}
-
 bool ClientSocket::connect(const std::string& ip, int port) {
     sock_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (sock_fd < 0) return false;

@@ -32,7 +32,7 @@ class ServerStub {
      * @param engineer_id The ID of the engineer handling the client.
      * @param expertQueue The shared expert request queue.
      */
-    void handle_client(int client_fd, int engineer_id, ExpertRequestQueue& expertQueue);
+    void handle_client_request(int client_fd, int engineer_id, ExpertRequestQueue& expertQueue);
 
     /**
      * Processes a RobotOrder and generates a Robot response.

@@ -12,11 +12,6 @@
 
 ServerSocket::ServerSocket() : socket_fd(-1), client_fd(-1) {}
 
-ServerSocket::~ServerSocket() {
-    if (client_fd >= 0) close(client_fd);
-    if (socket_fd >= 0) close(socket_fd);
-}
-
 bool ServerSocket::listen(int port) {
     socket_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (socket_fd < 0) {
@@ -24,7 +19,7 @@ bool ServerSocket::listen(int port) {
         return false;
     }
 
-    // Allow socket reuse
+    // allow socket reuse
     int opt = 1;
     if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) <
         0) {

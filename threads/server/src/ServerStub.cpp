@@ -25,7 +25,7 @@ void ServerStub::attach_special_module(ExpertRequest req, int expert_id) {
     req.promise.set_value(req.robot);
 }
 
-void ServerStub::handle_client(int client_fd, int engineer_id, ExpertRequestQueue& expertQueue) {
+void ServerStub::handle_client_request(int client_fd, int engineer_id, ExpertRequestQueue& expertQueue) {
     RobotOrder order(0, 0, 0);
 
     while (true) {

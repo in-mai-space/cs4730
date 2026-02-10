@@ -8,7 +8,6 @@
 class ServerSocket {
    public:
     ServerSocket();
-    ~ServerSocket();
 
     /**
      * Sets up the server to listen on the specified port.

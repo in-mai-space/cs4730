@@ -30,7 +30,6 @@ class ClientStub {
      * @param recorder A LatencyRecorder struct to store the latencies of each order.
      * @param latency_mutex A mutex to protect access to the latencies vector.
      */
-    // Returns true if all orders succeed, false otherwise
     bool order(const RobotOrder& details, int customer_id, LatencyRecorder& recorder);
 
    private:
