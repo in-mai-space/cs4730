@@ -7,7 +7,6 @@
 
 const std::string ClientConfig::DEFAULT_SERVER_IP = "127.0.0.1";
 
-// default client config if no args
 ClientConfig::ClientConfig()
     : server_ip(DEFAULT_SERVER_IP),
       server_port(DEFAULT_SERVER_PORT),
@@ -15,7 +14,6 @@ ClientConfig::ClientConfig()
       orders(1),
       robot_type(0) {}
 
-// construct config from parameters
 ClientConfig::ClientConfig(std::string server_ip, int server_port,
                            int customers, int orders, int robot_type)
     : server_ip(std::move(server_ip)),

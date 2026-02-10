@@ -65,7 +65,7 @@ void handle_client_thread(ServerStub* stub, int client_fd, int engineer_id,
 void initialize_engineer_threads(int id, ServerSocket& server_socket,
                                  ServerStub& server_stub,
                                  ExpertRequestQueue& expertQueue) {
-    int engineer_id = id;  // starting engineer ID
+    int engineer_id = id;  // starting engineer ID to ensure unique ID
 
     while (true) {
         // accept new client connection

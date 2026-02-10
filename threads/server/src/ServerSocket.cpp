@@ -19,7 +19,6 @@ bool ServerSocket::listen(int port) {
         return false;
     }
 
-    // allow socket reuse
     int opt = 1;
     if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) <
         0) {
