@@ -7,7 +7,7 @@
 #include <netinet/tcp.h>
 #include <sys/types.h>
 
-#include "ServerSocket.h"
+#include "../include/ServerSocket.h"
 
 ServerSocket::ServerSocket(int fd, bool nagle_on) {
 	fd_ = fd;

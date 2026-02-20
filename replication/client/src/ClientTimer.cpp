@@ -1,7 +1,7 @@
 #include <iomanip>
 #include <iostream>
 
-#include "ClientTimer.h"
+#include "../include/ClientTimer.h"
 
 ClientTimer::ClientTimer() {
 	sum = duration<double, std::micro>(0);

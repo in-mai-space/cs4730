@@ -1,8 +1,8 @@
 #include <iostream>
 #include <memory>
 
-#include "ServerThread.h"
-#include "ServerStub.h"
+#include "../include/ServerThread.h"
+#include "../include/ServerStub.h"
 
 RobotInfo RobotFactory::CreateRegularRobot(RobotOrder order, int engineer_id) {
 	RobotInfo robot;

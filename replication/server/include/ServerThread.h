@@ -7,7 +7,7 @@
 #include <queue>
 #include <thread>
 
-#include "Messages.h"
+#include "../../common/include/Messages.h"
 #include "ServerSocket.h"
 
 struct ExpertRequest {

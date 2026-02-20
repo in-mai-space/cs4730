@@ -2,7 +2,7 @@
 #include <iostream>
 
 #include <arpa/inet.h>
-#include "Messages.h"
+#include "../include/Messages.h"
 
 RobotOrder::RobotOrder() {
 	customer_id = -1;

@@ -1,5 +1,5 @@
-#include "ClientThread.h"
-#include "Messages.h"
+#include "../include/ClientThread.h"
+#include "../../common/include/Messages.h"
 
 #include <iostream>
 
