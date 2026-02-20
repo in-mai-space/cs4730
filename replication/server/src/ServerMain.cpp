@@ -4,8 +4,9 @@
 #include <thread>
 #include <vector>
 
-#include "ServerSocket.h"
-#include "ServerThread.h"
+#include "../include/ServerSocket.h"
+#include "../include/ServerStub.h"
+#include "../include/ServerThread.h"
 
 int main(int argc, char *argv[]) {
 	int port;

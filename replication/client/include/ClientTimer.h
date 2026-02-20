@@ -16,6 +16,14 @@ public:
 	duration<double, std::micro> elapsed_time;
 
 	ClientTimer();
+	ClientTimer(const ClientTimer &timer) {
+		sum = timer.sum;
+		max = timer.max;
+		min = timer.min;
+		op_count = timer.op_count;
+		start_time = timer.start_time;
+		elapsed_time = timer.elapsed_time;
+	}
 	void operator = (const ClientTimer &timer) {
 		sum = timer.sum;
 		max = timer.max;

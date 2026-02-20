@@ -4,7 +4,7 @@
 #include <memory>
 
 #include "ServerSocket.h"
-#include "Messages.h"
+#include "../../common/include/Messages.h"
 
 class ServerStub {
 private:

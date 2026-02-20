@@ -13,10 +13,10 @@ class ClientThreadClass {
 	int num_orders;
 	int robot_type;
 	ClientStub stub;
-
 	ClientTimer timer;
 public:
 	ClientThreadClass();
+	
 	void ThreadBody(std::string ip, int port, int id, int orders, int type);
 
 	ClientTimer GetTimer();

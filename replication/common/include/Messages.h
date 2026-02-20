@@ -11,6 +11,11 @@ private:
 
 public:
 	RobotOrder();
+	RobotOrder(const RobotOrder &order) {
+		customer_id = order.customer_id;
+		order_number = order.order_number;
+		robot_type = order.robot_type;
+	}
 	void operator = (const RobotOrder &order) {
 		customer_id = order.customer_id;
 		order_number = order.order_number;
@@ -41,6 +46,13 @@ private:
 
 public:
 	RobotInfo();
+	RobotInfo(const RobotInfo &info) {
+		customer_id = info.customer_id;
+		order_number = info.order_number;
+		robot_type = info.robot_type;
+		engineer_id = info.engineer_id;
+		expert_id = info.expert_id;
+	}
 	void operator = (const RobotInfo &info) {
 		customer_id = info.customer_id;
 		order_number = info.order_number;

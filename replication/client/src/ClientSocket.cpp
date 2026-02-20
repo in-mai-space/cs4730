@@ -5,7 +5,7 @@
 #include <netinet/tcp.h>
 #include <sys/types.h>
 
-#include "ClientSocket.h"
+#include "../include/ClientSocket.h"
 
 int ClientSocket::Init(std::string ip, int port) {
 	if (is_initialized_) {

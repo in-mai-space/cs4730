@@ -5,9 +5,9 @@
 #include <thread> 
 #include <vector> 
 
-#include "ClientSocket.h"
-#include "ClientThread.h"
-#include "ClientTimer.h"
+#include "../include/ClientSocket.h"
+#include "../include/ClientStub.h"
+#include "../include/ClientThread.h"
 
 int main(int argc, char *argv[]) {
 	std::string ip;

@@ -4,7 +4,7 @@
 #include <string>
 
 #include "ClientSocket.h"
-#include "Messages.h"
+#include "../../common/include/Messages.h"
 
 class ClientStub {
 private:
@@ -14,6 +14,5 @@ public:
 	int Init(std::string ip, int port);
 	RobotInfo OrderRobot(RobotOrder order);
 };
-
 
 #endif // end of #ifndef __CLIENT_STUB_H__
