@@ -24,7 +24,7 @@ int main(int argc, char *argv[]) {
 		std::cout << "not enough arguments" << std::endl;
 		std::cout << argv[0] << "[ip] [port #] [# customers] ";
 		std::cout << "[# orders] [robot type 0 or 1]" << std::endl;
-		return 0;
+		return 1;
 	}
 
 	ip = argv[1];
@@ -53,5 +53,5 @@ int main(int argc, char *argv[]) {
 	}
 	timer.PrintStats();
 
-	return 1;
+	return 0;
 }
