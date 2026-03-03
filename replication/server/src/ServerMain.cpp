@@ -28,9 +28,9 @@ int main(int argc, char* argv[]) {
 }
 
 void start_server(const ServerConfig& config) {
-    std::cout << "Starting factory " << config.factory_id
-              << " on port " << config.port
-              << " with " << config.peers.size() << " peer(s)." << std::endl;
+    std::cout << "Starting factory " << config.factory_id << " on port "
+              << config.port << " with " << config.peers.size() << " peer(s)."
+              << std::endl;
 
     ServerSocket server_socket;
     if (!server_socket.listen(config.port)) {
@@ -81,7 +81,7 @@ void initialize_engineer_threads(int id, ServerSocket& server_socket,
 void initialize_admin_thread(ServerStub& server_stub,
                              AdminRequestQueue& adminQueue) {
     std::cout << "[Admin 0] Initializing admin thread." << std::endl;
-    std::thread admin_thread(&ServerStub::admin_process_requests,
-                             &server_stub, 0, std::ref(adminQueue));
+    std::thread admin_thread(&ServerStub::admin_process_requests, &server_stub,
+                             0, std::ref(adminQueue));
     admin_thread.detach();
 }

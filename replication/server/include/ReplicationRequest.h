@@ -4,7 +4,7 @@
 #include "./StateMachineLog.h"
 
 class ReplicationRequest {
-public:
+   public:
     ReplicationRequest();
 
     int factory_id;

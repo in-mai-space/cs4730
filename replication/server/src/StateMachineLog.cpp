@@ -12,6 +12,4 @@ void StateMachineLog::write_operation(int index, int op_code, int arg1,
     log[index - 1] = {op_code, arg1, arg2};
 }
 
-MapOp StateMachineLog::get_operation(int index) const {
-    return log[index - 1];
-}
+MapOp StateMachineLog::get_operation(int index) const { return log[index - 1]; }

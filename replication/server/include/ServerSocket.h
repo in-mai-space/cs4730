@@ -5,8 +5,8 @@
 #include "../../common/include/CustomerRecords.h"
 #include "../../common/include/Robot.h"
 #include "../../common/include/RobotOrder.h"
-#include "./ServerConfig.h"
 #include "./ReplicationRequest.h"
+#include "./ServerConfig.h"
 
 class ServerSocket {
    public:
@@ -109,7 +109,8 @@ class ServerSocket {
     /**
      * Marshalls a ReplicationRequest into a byte buffer.
      */
-    int marshall(const ReplicationRequest& request, char* buffer, int buffer_size);
+    int marshall(const ReplicationRequest& request, char* buffer,
+                 int buffer_size);
 
     /**
      * Marshalls a CustomerRecord into a byte buffer.
@@ -129,7 +130,8 @@ class ServerSocket {
     /**
      * Unmarshalls a byte buffer into a ReplicationRequest.
      */
-    int unmarshall(const char* buffer, int buffer_size, ReplicationRequest& request);
+    int unmarshall(const char* buffer, int buffer_size,
+                   ReplicationRequest& request);
 
     /**
      * Sends all data in the buffer to the specified client.

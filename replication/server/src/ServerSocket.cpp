@@ -21,7 +21,8 @@ bool ServerSocket::listen(int port) {
     }
 
     int opt = 1;
-    if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) < 0) {
+    if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt)) <
+        0) {
         std::cerr << "Error setting socket options" << std::endl;
         close(socket_fd);
         return false;
@@ -98,8 +99,8 @@ bool ServerSocket::connect_to_peers(const std::vector<PeerInfo>& peers) {
         }
 
         peer_fds.push_back(peer_fd);
-        std::cout << "[PFA] Connected to peer " << peer.id << " at "
-                  << peer.ip << ":" << peer.port << std::endl;
+        std::cout << "[PFA] Connected to peer " << peer.id << " at " << peer.ip
+                  << ":" << peer.port << std::endl;
     }
     return true;
 }
@@ -167,7 +168,7 @@ bool ServerSocket::send(const CustomerRecord& record, int client_fd) {
 }
 
 bool ServerSocket::send_replication_request(const ReplicationRequest& request,
-                                             int peer_index) {
+                                            int peer_index) {
     if (peer_index < 0 || peer_index >= (int)peer_fds.size()) return false;
     int fd = peer_fds[peer_index];
 
@@ -196,9 +197,9 @@ int ServerSocket::marshall(const Robot& robot, char* buffer, int buffer_size) {
 
     std::memcpy(buffer, &net_customer_id, sizeof(int));
     std::memcpy(buffer + sizeof(int), &net_order_number, sizeof(int));
-    std::memcpy(buffer + 2*sizeof(int), &net_request_type, sizeof(int));
-    std::memcpy(buffer + 3*sizeof(int), &net_engineer_id, sizeof(int));
-    std::memcpy(buffer + 4*sizeof(int), &net_admin_id, sizeof(int));
+    std::memcpy(buffer + 2 * sizeof(int), &net_request_type, sizeof(int));
+    std::memcpy(buffer + 3 * sizeof(int), &net_engineer_id, sizeof(int));
+    std::memcpy(buffer + 4 * sizeof(int), &net_admin_id, sizeof(int));
 
     return 5 * sizeof(int);
 }
@@ -213,7 +214,7 @@ int ServerSocket::unmarshall(const char* buffer, int buffer_size,
 
     std::memcpy(&net_customer_id, buffer, sizeof(int));
     std::memcpy(&net_order_number, buffer + sizeof(int), sizeof(int));
-    std::memcpy(&net_request_type, buffer + 2*sizeof(int), sizeof(int));
+    std::memcpy(&net_request_type, buffer + 2 * sizeof(int), sizeof(int));
 
     order.customer_id = ntohl(net_customer_id);
     order.order_number = ntohl(net_order_number);
@@ -222,8 +223,7 @@ int ServerSocket::unmarshall(const char* buffer, int buffer_size,
     return 3 * sizeof(int);
 }
 
-int ServerSocket::marshall(const CustomerRecord& record,
-                           char* buffer,
+int ServerSocket::marshall(const CustomerRecord& record, char* buffer,
                            int buffer_size) {
     if (buffer_size < 2 * (int)sizeof(int)) return -1;
 
@@ -236,31 +236,29 @@ int ServerSocket::marshall(const CustomerRecord& record,
     return 2 * sizeof(int);
 }
 
-int ServerSocket::marshall(const ReplicationRequest& request,
-                           char* buffer,
+int ServerSocket::marshall(const ReplicationRequest& request, char* buffer,
                            int buffer_size) {
     if (buffer_size < 6 * (int)sizeof(int)) return -1;
 
-    int net_factory_id      = htonl(request.factory_id);
+    int net_factory_id = htonl(request.factory_id);
     int net_committed_index = htonl(request.committed_index);
-    int net_last_index      = htonl(request.last_index);
+    int net_last_index = htonl(request.last_index);
 
     int net_opcode = htonl(request.operation.op_code);
-    int net_arg1   = htonl(request.operation.arg1);
-    int net_arg2   = htonl(request.operation.arg2);
+    int net_arg1 = htonl(request.operation.arg1);
+    int net_arg2 = htonl(request.operation.arg2);
 
     std::memcpy(buffer, &net_factory_id, sizeof(int));
-    std::memcpy(buffer + 1*sizeof(int), &net_committed_index, sizeof(int));
-    std::memcpy(buffer + 2*sizeof(int), &net_last_index, sizeof(int));
-    std::memcpy(buffer + 3*sizeof(int), &net_opcode, sizeof(int));
-    std::memcpy(buffer + 4*sizeof(int), &net_arg1, sizeof(int));
-    std::memcpy(buffer + 5*sizeof(int), &net_arg2, sizeof(int));
+    std::memcpy(buffer + 1 * sizeof(int), &net_committed_index, sizeof(int));
+    std::memcpy(buffer + 2 * sizeof(int), &net_last_index, sizeof(int));
+    std::memcpy(buffer + 3 * sizeof(int), &net_opcode, sizeof(int));
+    std::memcpy(buffer + 4 * sizeof(int), &net_arg1, sizeof(int));
+    std::memcpy(buffer + 5 * sizeof(int), &net_arg2, sizeof(int));
 
     return 6 * sizeof(int);
 }
 
-int ServerSocket::unmarshall(const char* buffer,
-                             int buffer_size,
+int ServerSocket::unmarshall(const char* buffer, int buffer_size,
                              ReplicationRequest& request) {
     if (buffer_size < 6 * (int)sizeof(int)) return -1;
 
@@ -272,11 +270,11 @@ int ServerSocket::unmarshall(const char* buffer,
     int net_arg2 = 0;
 
     std::memcpy(&net_factory_id, buffer, sizeof(int));
-    std::memcpy(&net_committed_index, buffer + 1*sizeof(int), sizeof(int));
-    std::memcpy(&net_last_index, buffer + 2*sizeof(int), sizeof(int));
-    std::memcpy(&net_opcode, buffer + 3*sizeof(int), sizeof(int));
-    std::memcpy(&net_arg1, buffer + 4*sizeof(int), sizeof(int));
-    std::memcpy(&net_arg2, buffer + 5*sizeof(int), sizeof(int));
+    std::memcpy(&net_committed_index, buffer + 1 * sizeof(int), sizeof(int));
+    std::memcpy(&net_last_index, buffer + 2 * sizeof(int), sizeof(int));
+    std::memcpy(&net_opcode, buffer + 3 * sizeof(int), sizeof(int));
+    std::memcpy(&net_arg1, buffer + 4 * sizeof(int), sizeof(int));
+    std::memcpy(&net_arg2, buffer + 5 * sizeof(int), sizeof(int));
 
     request.factory_id = ntohl(net_factory_id);
     request.committed_index = ntohl(net_committed_index);

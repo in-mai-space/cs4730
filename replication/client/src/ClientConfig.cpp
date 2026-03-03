@@ -65,7 +65,8 @@ ClientConfig parse_and_validate_client_config(int argc, char* argv[]) {
         std::cerr << "Invalid number of orders: " << argv[4] << std::endl;
         exit(1);
     }
-    if (std::string(argv[5]) != "1" && std::string(argv[5]) != "2" && std::string(argv[5]) != "3") {
+    if (std::string(argv[5]) != "1" && std::string(argv[5]) != "2" &&
+        std::string(argv[5]) != "3") {
         std::cerr << "Invalid request type (must be 1, 2, or 3): " << argv[5]
                   << std::endl;
         exit(1);

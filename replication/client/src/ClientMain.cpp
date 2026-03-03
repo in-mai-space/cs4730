@@ -7,11 +7,11 @@
 #include <thread>
 #include <vector>
 
+#include "../../common/include/CustomerRecords.h"
+#include "../../common/include/RobotOrder.h"
 #include "../include/ClientConfig.h"
 #include "../include/ClientLogger.h"
 #include "../include/ClientStub.h"
-#include "../../common/include/CustomerRecords.h"
-#include "../../common/include/RobotOrder.h"
 
 void start_client(ClientConfig& config);
 void initialize_customer_threads(
@@ -42,7 +42,6 @@ void initialize_customer_threads(
     ClientConfig& cfg, std::vector<std::thread>& customer_threads,
     std::vector<std::shared_ptr<ClientStub>>& client_stubs,
     LatencyRecorder& recorder) {
-
     for (int i = 0; i < cfg.customers; i++) {
         std::shared_ptr<ClientStub> stub = std::make_shared<ClientStub>();
         client_stubs.push_back(stub);

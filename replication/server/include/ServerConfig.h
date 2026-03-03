@@ -18,8 +18,8 @@ class ServerConfig {
     ServerConfig();
     ServerConfig(int port, int factory_id, const std::vector<PeerInfo>& peers);
 
-    int port;        // this factory's listen port
-    int factory_id;  // unique ID of this factory (>= 0)
+    int port;                     // this factory's listen port
+    int factory_id;               // unique ID of this factory (>= 0)
     std::vector<PeerInfo> peers;  // peer factory servers
 };
 
