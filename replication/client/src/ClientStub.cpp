@@ -16,10 +16,10 @@ bool ClientStub::order(const RobotOrder& order_template, int customer_id,
                        LatencyRecorder& recorder) {
     bool all_success = true;
     for (int i = 1; i <= order_template.order_number; i++) {
-        RobotOrder order(customer_id, i, order_template.robot_type);
+        RobotOrder order(customer_id, i, order_template.request_type);
 
         std::cout << "[Client " << customer_id << "] Sending order " << i
-                  << " (robot_type=" << order_template.robot_type
+                  << " (request_type=" << order_template.request_type
                   << ") to server..." << std::endl;
         auto start_time = std::chrono::high_resolution_clock::now();
 
@@ -43,7 +43,7 @@ bool ClientStub::order(const RobotOrder& order_template, int customer_id,
         }
         std::cout << "[Client " << customer_id << "] Received robot for order "
                   << i << ": engineer_id=" << response.engineer_id
-                  << ", expert_id=" << response.expert_id << std::endl;
+                  << ", admin_id=" << response.admin_id << std::endl;
 
         // accumulate time taken to process an order for calculation at the end
         auto end_time = std::chrono::high_resolution_clock::now();

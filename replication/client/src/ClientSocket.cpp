@@ -73,11 +73,11 @@ int ClientSocket::marshall(const RobotOrder& order, char* buffer,
 
     int net_customer_id = htonl(order.customer_id);
     int net_order_number = htonl(order.order_number);
-    int net_robot_type = htonl(order.robot_type);
+    int net_request_type = htonl(order.request_type);
 
     std::memcpy(buffer, &net_customer_id, sizeof(int));
     std::memcpy(buffer + sizeof(int), &net_order_number, sizeof(int));
-    std::memcpy(buffer + 2 * sizeof(int), &net_robot_type, sizeof(int));
+    std::memcpy(buffer + 2 * sizeof(int), &net_request_type, sizeof(int));
 
     return 3 * sizeof(int);
 }
@@ -86,20 +86,20 @@ int ClientSocket::unmarshall(const char* buffer, int buffer_size,
                              Robot& order) {
     if (buffer_size < 5 * (int)sizeof(int)) return -1;
 
-    int net_customer_id = 0, net_order_number = 0, net_robot_type = 0;
-    int net_engineer_id = 0, net_expert_id = 0;
+    int net_customer_id = 0, net_order_number = 0, net_request_type = 0;
+    int net_engineer_id = 0, net_admin_id = 0;
 
     std::memcpy(&net_customer_id, buffer, sizeof(int));
     std::memcpy(&net_order_number, buffer + sizeof(int), sizeof(int));
-    std::memcpy(&net_robot_type, buffer + 2 * sizeof(int), sizeof(int));
+    std::memcpy(&net_request_type, buffer + 2 * sizeof(int), sizeof(int));
     std::memcpy(&net_engineer_id, buffer + 3 * sizeof(int), sizeof(int));
-    std::memcpy(&net_expert_id, buffer + 4 * sizeof(int), sizeof(int));
+    std::memcpy(&net_admin_id, buffer + 4 * sizeof(int), sizeof(int));
 
     order.customer_id = ntohl(net_customer_id);
     order.order_number = ntohl(net_order_number);
-    order.robot_type = ntohl(net_robot_type);
+    order.request_type = ntohl(net_request_type);
     order.engineer_id = ntohl(net_engineer_id);
-    order.expert_id = ntohl(net_expert_id);
+    order.admin_id = ntohl(net_admin_id);
 
     return 5 * sizeof(int);
 }
