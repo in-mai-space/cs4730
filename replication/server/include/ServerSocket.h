@@ -5,6 +5,8 @@
 #include "../../common/include/CustomerRecords.h"
 #include "../../common/include/Robot.h"
 #include "../../common/include/RobotOrder.h"
+#include "./ServerConfig.h"
+#include "./ReplicationRequest.h"
 
 class ServerSocket {
    public:
@@ -23,6 +25,11 @@ class ServerSocket {
     int accept();
 
     /**
+     * Establish connections with other nodes.
+     */
+    bool connect_to_peers(const std::vector<PeerInfo>& peers);
+
+    /**
      * Sends a Robot to the specified client.
      * @param robot The Robot to send.
      * @param client_fd The file descriptor of the client socket.
@@ -35,6 +42,18 @@ class ServerSocket {
      * @param client_fd The file descriptor of the client socket.
      */
     bool send(const CustomerRecord& record, int client_fd = -1);
+
+    /**
+     * Send a replication request to peer nodes.
+     * @param request The ReplicationRequest to send.
+     */
+    bool send_replication_request(const ReplicationRequest& request);
+
+    /**
+     * Receive replication request from peer nodes.
+     * @param request The ReplicationRequest object to populate with received data.
+     */
+    bool receive_replication_request(ReplicationRequest& request);
 
     /**
      * Receives a RobotOrder from the specified client.
@@ -56,14 +75,29 @@ class ServerSocket {
     int marshall(const Robot& robot, char* buffer, int buffer_size);
 
     /**
+     * Marshalls a ReplicationRequest into a byte buffer.
+     */
+    int marshall(const ReplicationRequest& request, char* buffer, int buffer_size);
+
+    /**
      * Marshalls a CustomerRecord into a byte buffer.
      */
     int marshall(const CustomerRecord& record, char* buffer, int buffer_size);
 
     /**
+     * Unmarshalls a byte buffer in a CustomerRecord.
+     */
+    int unmarshall(const char* buffer, int buffer_size, CustomerRecord& record);
+
+    /**
      * Unmarshalls a byte buffer into a RobotOrder.
      */
     int unmarshall(const char* buffer, int buffer_size, RobotOrder& order);
+
+    /**
+     * Unmarshalls a byte buffer into a ReplicationRequest.
+     */
+    int unmarshall(const char* buffer, int buffer_size, ReplicationRequest& request);
 
     /**
      * Sends all data in the buffer to the specified client.
@@ -83,6 +117,7 @@ class ServerSocket {
 
     int socket_fd;
     int client_fd;
+    std::vector<int> peer_fds;
 };
 
 #endif
