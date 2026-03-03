@@ -65,10 +65,10 @@ int ServerSocket::accept() {
 
 bool ServerSocket::connect_to_peers(const std::vector<PeerInfo>& peers) {
     for (const auto& peer : peers) {
-
         int peer_fd = socket(AF_INET, SOCK_STREAM, 0);
         if (peer_fd < 0) {
-            std::cerr << "Failed to create peer socket\n";
+            std::cerr << "Failed to create peer socket for peer " << peer.id
+                      << std::endl;
             return false;
         }
 
@@ -77,21 +77,64 @@ bool ServerSocket::connect_to_peers(const std::vector<PeerInfo>& peers) {
         peer_addr.sin_port = htons(peer.port);
 
         if (inet_pton(AF_INET, peer.ip.c_str(), &peer_addr.sin_addr) <= 0) {
-            std::cerr << "Invalid peer address\n";
+            std::cerr << "Invalid peer address for peer " << peer.id
+                      << std::endl;
             close(peer_fd);
             return false;
         }
 
-        if (connect(peer_fd, (sockaddr*)&peer_addr, sizeof(peer_addr)) < 0) {
-            std::cerr << "Failed to connect to peer\n";
+        if (::connect(peer_fd, (sockaddr*)&peer_addr, sizeof(peer_addr)) < 0) {
+            std::cerr << "Failed to connect to peer " << peer.id << std::endl;
+            close(peer_fd);
+            return false;
+        }
+
+        // Identify ourselves as PFA (type = 1).
+        if (!send_identification(1, peer_fd)) {
+            std::cerr << "Failed to send identification to peer " << peer.id
+                      << std::endl;
             close(peer_fd);
             return false;
         }
 
         peer_fds.push_back(peer_fd);
+        std::cout << "[PFA] Connected to peer " << peer.id << " at "
+                  << peer.ip << ":" << peer.port << std::endl;
     }
-
     return true;
+}
+
+bool ServerSocket::send_identification(int type, int client_fd) {
+    int net_type = htonl(type);
+    return send_all(reinterpret_cast<const char*>(&net_type), sizeof(int),
+                    client_fd);
+}
+
+bool ServerSocket::receive_identification(int& type, int client_fd) {
+    int net_type = 0;
+    if (!receive_all(reinterpret_cast<char*>(&net_type), sizeof(int),
+                     client_fd))
+        return false;
+    type = ntohl(net_type);
+    return true;
+}
+
+bool ServerSocket::send_ack(int client_fd) {
+    int net_val = htonl(1);
+    return send_all(reinterpret_cast<const char*>(&net_val), sizeof(int),
+                    client_fd);
+}
+
+bool ServerSocket::receive_ack(int client_fd) {
+    int net_val = 0;
+    if (!receive_all(reinterpret_cast<char*>(&net_val), sizeof(int), client_fd))
+        return false;
+    return ntohl(net_val) == 1;
+}
+
+bool ServerSocket::receive_ack_from_peer(int peer_index) {
+    if (peer_index < 0 || peer_index >= (int)peer_fds.size()) return false;
+    return receive_ack(peer_fds[peer_index]);
 }
 
 bool ServerSocket::send(const Robot& robot, int client_fd) {
@@ -123,11 +166,10 @@ bool ServerSocket::send(const CustomerRecord& record, int client_fd) {
     return send_all(buffer, len, fd);
 }
 
-bool ServerSocket::send_replication_request(
-    const ReplicationRequest& request) {
-
-    int fd = this->client_fd;
-    if (fd < 0) return false;
+bool ServerSocket::send_replication_request(const ReplicationRequest& request,
+                                             int peer_index) {
+    if (peer_index < 0 || peer_index >= (int)peer_fds.size()) return false;
+    int fd = peer_fds[peer_index];
 
     char buffer[6 * sizeof(int)];
     int len = marshall(request, buffer, sizeof(buffer));
@@ -136,16 +178,10 @@ bool ServerSocket::send_replication_request(
     return send_all(buffer, len, fd);
 }
 
-bool ServerSocket::receive_replication_request(
-    ReplicationRequest& request) {
-
-    int fd = this->client_fd;
-    if (fd < 0) return false;
-
+bool ServerSocket::receive_replication_request(ReplicationRequest& request,
+                                               int client_fd) {
     char buffer[6 * sizeof(int)];
-    if (!receive_all(buffer, sizeof(buffer), fd))
-        return false;
-
+    if (!receive_all(buffer, sizeof(buffer), client_fd)) return false;
     return unmarshall(buffer, sizeof(buffer), request) > 0;
 }
 

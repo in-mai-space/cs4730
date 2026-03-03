@@ -39,7 +39,7 @@ void start_server(const ServerConfig& config) {
     }
 
     ServerStub server_stub;
-    server_stub.init(&server_socket);
+    server_stub.init(&server_socket, config);
 
     AdminRequestQueue adminQueue;
 

@@ -30,7 +30,13 @@ bool ClientSocket::connect(const std::string& ip, int port) {
         return false;
     }
 
-    return true;
+    // Identify ourselves as a customer (type 0).
+    return send_identification(0);
+}
+
+bool ClientSocket::send_identification(int type) {
+    int net_type = htonl(type);
+    return send_all(reinterpret_cast<const char*>(&net_type), sizeof(int));
 }
 
 bool ClientSocket::send(const RobotOrder& order) {

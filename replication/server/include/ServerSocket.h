@@ -25,9 +25,41 @@ class ServerSocket {
     int accept();
 
     /**
-     * Establish connections with other nodes.
+     * Establish connections with all peer nodes.
+     * Sends identification type=1 (PFA) on each connection.
      */
     bool connect_to_peers(const std::vector<PeerInfo>& peers);
+
+    /**
+     * Returns the number of connected peer nodes.
+     */
+    int num_peers() const { return (int)peer_fds.size(); }
+
+    /**
+     * Sends an identification message on the given fd.
+     * type 0 = customer, type 1 = PFA/replication.
+     */
+    bool send_identification(int type, int client_fd);
+
+    /**
+     * Receives an identification message from the given fd.
+     */
+    bool receive_identification(int& type, int client_fd);
+
+    /**
+     * Sends a one-int acknowledgement to the given fd.
+     */
+    bool send_ack(int client_fd);
+
+    /**
+     * Receives a one-int acknowledgement from the given fd.
+     */
+    bool receive_ack(int client_fd);
+
+    /**
+     * Receives an ack from the peer at peer_index in peer_fds (used by PFA).
+     */
+    bool receive_ack_from_peer(int peer_index);
 
     /**
      * Sends a Robot to the specified client.
@@ -44,16 +76,16 @@ class ServerSocket {
     bool send(const CustomerRecord& record, int client_fd = -1);
 
     /**
-     * Send a replication request to peer nodes.
-     * @param request The ReplicationRequest to send.
+     * Send a replication request to the peer at peer_index in peer_fds.
      */
-    bool send_replication_request(const ReplicationRequest& request);
+    bool send_replication_request(const ReplicationRequest& request,
+                                  int peer_index);
 
     /**
-     * Receive replication request from peer nodes.
-     * @param request The ReplicationRequest object to populate with received data.
+     * Receive replication request from an IFA-connected client.
      */
-    bool receive_replication_request(ReplicationRequest& request);
+    bool receive_replication_request(ReplicationRequest& request,
+                                     int client_fd);
 
     /**
      * Receives a RobotOrder from the specified client.

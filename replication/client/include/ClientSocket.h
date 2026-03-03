@@ -17,10 +17,17 @@ class ClientSocket {
 
     /**
      * Connects to the server at the specified IP and port.
+     * Automatically sends identification as a customer (type 0).
      * @param ip The server IP address.
      * @param port The server port number.
      */
     bool connect(const std::string& ip, int port);
+
+    /**
+     * Sends an identification message to the server.
+     * type 0 = customer.
+     */
+    bool send_identification(int type);
 
     /**
      * Sends a RobotOrder to the server.
