@@ -57,11 +57,20 @@ void initialize_customer_threads(
 
         } else if (cfg.request_type == 2) {
             // Record read: send cfg.orders read requests for own customer_id.
-            std::thread t([stub, i, &cfg]() {
+            std::thread t([stub, i, &cfg, &recorder]() {
                 for (int j = 0; j < cfg.orders; j++) {
-                    // order_number=-1 for read requests
                     RobotOrder req(i, -1, 2);
+                    auto t0 = std::chrono::high_resolution_clock::now();
                     CustomerRecord rec = stub->ReadRecord(req);
+                    auto t1 = std::chrono::high_resolution_clock::now();
+                    auto latency =
+                        std::chrono::duration_cast<std::chrono::microseconds>(
+                            t1 - t0)
+                            .count();
+                    {
+                        std::lock_guard<std::mutex> lock(recorder.mutex);
+                        recorder.latencies.push_back(latency);
+                    }
                     if (rec.customer_id != -1) {
                         std::cout << rec.customer_id << "\t" << rec.last_order
                                   << std::endl;
@@ -72,10 +81,20 @@ void initialize_customer_threads(
 
         } else if (cfg.request_type == 3) {
             // Type 3: scan customer IDs 0..orders and print all valid records.
-            std::thread t([stub, &cfg]() {
+            std::thread t([stub, &cfg, &recorder]() {
                 for (int cid = 0; cid <= cfg.orders; cid++) {
-                    RobotOrder req(cid, -1, 2);  // send as request_type=2
+                    RobotOrder req(cid, -1, 2);
+                    auto t0 = std::chrono::high_resolution_clock::now();
                     CustomerRecord rec = stub->ReadRecord(req);
+                    auto t1 = std::chrono::high_resolution_clock::now();
+                    auto latency =
+                        std::chrono::duration_cast<std::chrono::microseconds>(
+                            t1 - t0)
+                            .count();
+                    {
+                        std::lock_guard<std::mutex> lock(recorder.mutex);
+                        recorder.latencies.push_back(latency);
+                    }
                     if (rec.customer_id != -1) {
                         std::cout << rec.customer_id << "\t" << rec.last_order
                                   << std::endl;

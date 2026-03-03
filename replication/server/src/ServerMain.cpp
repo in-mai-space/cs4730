@@ -28,8 +28,9 @@ int main(int argc, char* argv[]) {
 }
 
 void start_server(const ServerConfig& config) {
-    std::cout << "Starting server on port " << config.port << " with "
-              << config.expert_engineers << " expert engineers." << std::endl;
+    std::cout << "Starting factory " << config.factory_id
+              << " on port " << config.port
+              << " with " << config.peers.size() << " peer(s)." << std::endl;
 
     ServerSocket server_socket;
     if (!server_socket.listen(config.port)) {
@@ -44,11 +45,10 @@ void start_server(const ServerConfig& config) {
 
     std::cout << "Server is ready to accept connections..." << std::endl;
 
-    // Start the single admin thread
+    // start the single admin thread
     initialize_admin_thread(server_stub, adminQueue);
-    // Accept connections (blocks forever)
-    initialize_engineer_threads(config.expert_engineers, server_socket,
-                                server_stub, adminQueue);
+    // accept connections (blocks forever); engineer IDs start at 1 (admin is 0)
+    initialize_engineer_threads(1, server_socket, server_stub, adminQueue);
 }
 
 void handle_client_thread(ServerStub* stub, int client_fd, int engineer_id,
@@ -56,7 +56,7 @@ void handle_client_thread(ServerStub* stub, int client_fd, int engineer_id,
     stub->handle_client_request(client_fd, engineer_id, adminQueue);
 }
 
-// Accept new connections in a loop; spawn an engineer thread per client.
+// accept new connections in a loop; spawn an engineer thread per client.
 void initialize_engineer_threads(int id, ServerSocket& server_socket,
                                  ServerStub& server_stub,
                                  AdminRequestQueue& adminQueue) {
@@ -77,7 +77,7 @@ void initialize_engineer_threads(int id, ServerSocket& server_socket,
     }
 }
 
-// Start exactly one admin thread
+// start exactly one admin thread
 void initialize_admin_thread(ServerStub& server_stub,
                              AdminRequestQueue& adminQueue) {
     std::cout << "[Admin 0] Initializing admin thread." << std::endl;

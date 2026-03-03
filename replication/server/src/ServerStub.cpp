@@ -17,6 +17,7 @@ void ServerStub::admin_process_requests(int admin_id,
                                         AdminRequestQueue& adminQueue) {
     std::cout << "[Admin " << admin_id << "] Thread started." << std::endl;
     while (true) {
+        // wait for the next request from an engineer thread
         std::unique_lock<std::mutex> lock(adminQueue.mtx);
         adminQueue.cv.wait(lock, [&] { return !adminQueue.jobQueue.empty(); });
         AdminRequest req = std::move(adminQueue.jobQueue.front());
@@ -27,6 +28,7 @@ void ServerStub::admin_process_requests(int admin_id,
                   << "] Processing customer_id=" << req.robot.customer_id
                   << " order_number=" << req.robot.order_number << std::endl;
 
+        // update the customer record and state machine log
         {
             std::lock_guard<std::mutex> wlock(records_mutex);
             smr_log.add_operation(1, req.robot.customer_id,
@@ -35,6 +37,7 @@ void ServerStub::admin_process_requests(int admin_id,
                                           req.robot.order_number);
         }
 
+        // fulfill the promise to unblock the engineer thread
         req.robot.admin_id = admin_id;
         req.promise.set_value(req.robot);
     }
@@ -46,14 +49,18 @@ bool ServerStub::handle_robot_order(const RobotOrder& request, int engineer_id,
     Robot robot(request.customer_id, request.order_number,
                 request.request_type, engineer_id, -1);
 
+    // send the request to the admin thread and wait for the response
     std::promise<Robot> p;
     std::future<Robot> fut = p.get_future();
     {
         std::lock_guard<std::mutex> lock(adminQueue.mtx);
         adminQueue.jobQueue.push(AdminRequest{robot, std::move(p)});
     }
+
+    // notify the admin thread that a new request is available
     adminQueue.cv.notify_one();
 
+    // wait for the admin thread to process the request and return the updated robot
     robot = fut.get();
     std::cout << "[Engineer " << engineer_id
               << "] Shipping robot (admin_id=" << robot.admin_id << ")"
