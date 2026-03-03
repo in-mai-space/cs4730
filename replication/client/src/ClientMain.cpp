@@ -1,57 +1,73 @@
-#include <array>
-#include <iostream> 
-#include <iomanip> 
-#include <memory> 
-#include <thread> 
-#include <vector> 
+#include <algorithm>
+#include <atomic>
+#include <chrono>
+#include <iostream>
+#include <mutex>
+#include <string>
+#include <thread>
+#include <vector>
 
-#include "../include/ClientSocket.h"
+#include "../include/ClientConfig.h"
+#include "../include/ClientLogger.h"
 #include "../include/ClientStub.h"
-#include "../include/ClientThread.h"
 
-int main(int argc, char *argv[]) {
-	std::string ip;
-	int port;
-	int num_customers;
-	int num_orders;
-	int robot_type;
-	ClientTimer timer;
+void start_client(ClientConfig& config);
+void initialize_customer_threads(
+    ClientConfig& cfg, std::vector<std::thread>& customer_threads,
+    std::vector<std::shared_ptr<ClientStub>>& client_stubs,
+    LatencyRecorder& recorder);
 
-	std::vector<std::shared_ptr<ClientThreadClass>> client_vector;
-	std::vector<std::thread> thread_vector;
-	
-	if (argc < 6) {
-		std::cout << "not enough arguments" << std::endl;
-		std::cout << argv[0] << "[ip] [port #] [# customers] ";
-		std::cout << "[# orders] [robot type 0 or 1]" << std::endl;
-		return 1;
-	}
+int main(int argc, char* argv[]) {
+    ClientConfig cfg = parse_and_validate_client_config(argc, argv);
+    start_client(cfg);
+    return 0;
+}
 
-	ip = argv[1];
-	port = atoi(argv[2]);
-	num_customers = atoi(argv[3]);
-	num_orders = atoi(argv[4]);
-	robot_type = atoi(argv[5]);
+/**
+ * Starts the client by initializing customer threads and calculating latencies.
+ */
+void start_client(ClientConfig& cfg) {
+    std::vector<std::thread> customer_threads;
+    std::vector<std::shared_ptr<ClientStub>> client_stubs;
+    LatencyRecorder recorder;
 
+    // record start time for throughput calculation
+    auto start_time = std::chrono::high_resolution_clock::now();
 
-	timer.Start();
-	for (int i = 0; i < num_customers; i++) {
-		auto client_cls = std::shared_ptr<ClientThreadClass>(new ClientThreadClass());
-		std::thread client_thread(&ClientThreadClass::ThreadBody, client_cls,
-				ip, port, i, num_orders, robot_type);
+    initialize_customer_threads(cfg, customer_threads, client_stubs, recorder);
 
-		client_vector.push_back(std::move(client_cls));
-		thread_vector.push_back(std::move(client_thread));
-	}
-	for (auto& th : thread_vector) {
-		th.join();
-	}
-	timer.End();
+    // record end time for throughput calculation
+    auto end_time = std::chrono::high_resolution_clock::now();
 
-	for (auto& cls : client_vector) {
-		timer.Merge(cls->GetTimer());	
-	}
-	timer.PrintStats();
+    auto logger = ClientLogger(recorder.latencies);
+    logger.log_performance_statistics(start_time, end_time);
+}
 
-	return 0;
+/**
+ * Initializes customer threads to place orders concurrently.
+ */
+void initialize_customer_threads(
+    ClientConfig& cfg, std::vector<std::thread>& customer_threads,
+    std::vector<std::shared_ptr<ClientStub>>& client_stubs,
+    LatencyRecorder& recorder) {
+    // create the customer threads as many as the specified customer number
+    for (int i = 0; i < cfg.customers; i++) {
+        // each customer should have its own client stub instance
+        std::shared_ptr<ClientStub> stub = std::make_shared<ClientStub>();
+        client_stubs.push_back(stub);
+        // the socket connection should be made once per client stub
+        stub->init(cfg.server_ip, cfg.server_port);
+
+        RobotOrder order(i, cfg.orders, cfg.robot_type);
+        // each customer thread should have a unique customer id i
+        std::thread t(&ClientStub::order, stub, order, i, std::ref(recorder));
+        customer_threads.push_back(std::move(t));
+    }
+
+    // wait for all customer threads to finish
+    for (auto& thread : customer_threads) {
+        if (thread.joinable()) {
+            thread.join();
+        }
+    }
 }

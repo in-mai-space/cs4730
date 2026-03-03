@@ -1,44 +1,119 @@
-#include <chrono>
+#include <unistd.h>
+
+#include <condition_variable>
+#include <future>
 #include <iostream>
 #include <mutex>
+#include <queue>
 #include <thread>
 #include <vector>
 
+#include "../include/ServerConfig.h"
 #include "../include/ServerSocket.h"
 #include "../include/ServerStub.h"
-#include "../include/ServerThread.h"
 
-int main(int argc, char *argv[]) {
-	int port;
-	int engineer_cnt = 0;
-	int num_experts;
-	ServerSocket socket;
-	RobotFactory factory;
-	std::unique_ptr<ServerSocket> new_socket;
-	std::vector<std::thread> thread_vector;
-	
-	if (argc < 3) {
-		std::cout << "not enough arguments" << std::endl;
-		std::cout << argv[0] << "[port #] [# experts]" << std::endl;
-		return 0;
-	}
-	port = atoi(argv[1]);
-	num_experts = atoi(argv[2]);
+void start_server(const ServerConfig& config);
+void handle_client_thread(ServerStub* stub, int client_fd, int engineer_id,
+                          ExpertRequestQueue& expertQueue);
+void initialize_engineer_threads(int id, ServerSocket& server_socket,
+                                 ServerStub& server_stub,
+                                 ExpertRequestQueue& expertQueue);
+void initialize_expert_engineer_thread_pools(ServerStub& server_stub,
+                                             int num_expert_engineers,
+                                             ExpertRequestQueue& expertQueue);
 
-	for (int i = 0; i < num_experts; i++) {
-		std::thread expert_thread(&RobotFactory::ExpertThread, &factory, engineer_cnt++);
-		thread_vector.push_back(std::move(expert_thread));
-	}
+int main(int argc, char* argv[]) {
+    ServerConfig cfg = parse_server_config(argc, argv);
+    start_server(cfg);
+    return 0;
+}
 
-	if (!socket.Init(port)) {
-		std::cout << "Socket initialization failed" << std::endl;
-		return 0;
-	}
+void start_server(const ServerConfig& config) {
+    std::cout << "Starting server on port " << config.port << " with "
+              << config.expert_engineers << " expert engineers." << std::endl;
 
-	while ((new_socket = socket.Accept())) {
-		std::thread engineer_thread(&RobotFactory::EngineerThread, &factory, 
-				std::move(new_socket), engineer_cnt++);
-		thread_vector.push_back(std::move(engineer_thread));
-	}
-	return 0;
+    ServerSocket server_socket;
+    if (!server_socket.listen(config.port)) {
+        std::cerr << "Failed to start server" << std::endl;
+        return;
+    }
+
+    ServerStub server_stub;
+    server_stub.init(&server_socket);
+
+    std::vector<std::thread> expert_engineer_threads;
+    std::mutex mtx;
+    std::condition_variable cv;
+    std::shared_ptr<std::queue<std::promise<Robot>>> jobQueue =
+        std::make_shared<std::queue<std::promise<Robot>>>();
+    ExpertRequestQueue expertQueue;
+
+    std::cout << "Server is ready to accept connections..." << std::endl;
+
+    initialize_expert_engineer_thread_pools(
+        server_stub, config.expert_engineers, expertQueue);
+    initialize_engineer_threads(config.expert_engineers, server_socket,
+                                server_stub, expertQueue);
+}
+
+void handle_client_thread(ServerStub* stub, int client_fd, int engineer_id,
+                          ExpertRequestQueue& expertQueue) {
+    stub->handle_client_request(client_fd, engineer_id, expertQueue);
+}
+
+// accept new connections and waits for new connections from client in a loop
+void initialize_engineer_threads(int id, ServerSocket& server_socket,
+                                 ServerStub& server_stub,
+                                 ExpertRequestQueue& expertQueue) {
+    int engineer_id = id;  // starting engineer ID to ensure unique ID
+
+    while (true) {
+        // accept new client connection
+        int client_fd = server_socket.accept();
+        if (client_fd < 0) {
+            std::cerr << "Failed to accept client" << std::endl;
+            continue;
+        }
+
+        std::cout << "New client connected: " << client_fd << std::endl;
+
+        // create a new engineer thread to handle the client
+        std::thread engineer_thread(handle_client_thread, &server_stub,
+                                    client_fd, engineer_id++,
+                                    std::ref(expertQueue));
+        engineer_thread.detach();
+    }
+}
+
+void expert_engineers_wait_and_execute_job(int id,
+                                           ExpertRequestQueue& expertQueue,
+                                           ServerStub& server_stub) {
+    std::cout << "[Expert Engineer " << id << "] Thread started." << std::endl;
+    while (true) {
+        std::unique_lock<std::mutex> lock(expertQueue.mtx);
+
+        while (expertQueue.jobQueue.empty()) {
+            expertQueue.cv.wait(lock);
+        }
+
+        std::cout << "[Expert Engineer " << id << "] Dequeued a request."
+                  << std::endl;
+        ExpertRequest req = std::move(expertQueue.jobQueue.front());
+        expertQueue.jobQueue.pop();
+
+        lock.unlock();
+        server_stub.attach_special_module(std::move(req), id);
+    }
+}
+
+void initialize_expert_engineer_thread_pools(ServerStub& server_stub,
+                                             int num_expert_engineers,
+                                             ExpertRequestQueue& expertQueue) {
+    for (int i = 0; i < num_expert_engineers; ++i) {
+        std::cout << "[Expert Engineer " << i << "] Initializing thread."
+                  << std::endl;
+        std::thread expert_thread(expert_engineers_wait_and_execute_job, i,
+                                  std::ref(expertQueue), std::ref(server_stub));
+        expert_thread.detach();
+    }
 }
