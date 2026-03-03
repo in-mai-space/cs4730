@@ -1,7 +1,7 @@
 #ifndef REPLICATIONREQUEST_H
 #define REPLICATIONREQUEST_H
 
-#include "../../common/include/StateMachineLog.h"
+#include "./StateMachineLog.h"
 
 class ReplicationRequest {
 public:

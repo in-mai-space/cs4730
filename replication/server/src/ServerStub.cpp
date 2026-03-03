@@ -15,10 +15,10 @@ void ServerStub::init(ServerSocket* socket, const ServerConfig& config) {
     this->config = config;
     this->customerRecords = CustomerRecords();
     this->peers_connected = false;
-    this->serverState.factory_id = config.factory_id;
-    this->serverState.primary_id = -1;
-    this->serverState.last_index = 0;
-    this->serverState.committed_index = 0;
+    this->server_state.factory_id = config.factory_id;
+    this->server_state.primary_id = -1;
+    this->server_state.last_index = 0;
+    this->server_state.committed_index = 0;
 }
 
 void ServerStub::admin_process_requests(int admin_id,
@@ -42,8 +42,8 @@ void ServerStub::admin_process_requests(int admin_id,
         // Step 2: On first request, become primary and connect to peers.
         {
             std::lock_guard<std::mutex> sl(state_mutex);
-            if (serverState.primary_id != serverState.factory_id) {
-                serverState.primary_id = serverState.factory_id;
+            if (server_state.primary_id != server_state.factory_id) {
+                server_state.primary_id = server_state.factory_id;
                 if (!peers_connected && !config.peers.empty()) {
                     std::cout << "[PFA] Connecting to "
                               << config.peers.size() << " peer(s)..."
@@ -70,10 +70,10 @@ void ServerStub::admin_process_requests(int admin_id,
             std::lock_guard<std::mutex> sl(state_mutex);
             smr_log.add_operation(1, req.robot.customer_id,
                                   req.robot.order_number);
-            serverState.last_index++;
-            cur_last = serverState.last_index;
-            cur_committed = serverState.committed_index;
-            factory_id = serverState.factory_id;
+            server_state.last_index++;
+            cur_last = server_state.last_index;
+            cur_committed = server_state.committed_index;
+            factory_id = server_state.factory_id;
         }
 
         // Step 4: Replicate to every backup.  For each peer:
@@ -109,7 +109,7 @@ void ServerStub::admin_process_requests(int admin_id,
         }
         {
             std::lock_guard<std::mutex> sl(state_mutex);
-            serverState.committed_index = cur_last;
+            server_state.committed_index = cur_last;
         }
 
         std::cout << "[PFA " << admin_id
@@ -139,10 +139,10 @@ void ServerStub::handle_replication_request(int client_fd) {
         // Step 4b-i/ii: record new primary; write MapOp at req.last_index.
         {
             std::lock_guard<std::mutex> sl(state_mutex);
-            serverState.primary_id = req.factory_id;
+            server_state.primary_id = req.factory_id;
             smr_log.write_operation(req.last_index, req.operation.op_code,
                                     req.operation.arg1, req.operation.arg2);
-            serverState.last_index = req.last_index;
+            server_state.last_index = req.last_index;
         }
 
         // Step 4b-iii: apply the committed entry to the customer record.
@@ -159,7 +159,7 @@ void ServerStub::handle_replication_request(int client_fd) {
             }
             {
                 std::lock_guard<std::mutex> sl(state_mutex);
-                serverState.committed_index = req.committed_index;
+                server_state.committed_index = req.committed_index;
             }
             std::cout << "[IFA] Applied committed_index="
                       << req.committed_index << " customer_id="

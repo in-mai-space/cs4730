@@ -72,7 +72,7 @@ class ServerStub {
     // Protects serverState and smr_log.
     std::mutex state_mutex;
 
-    ServerState serverState;
+    ServerState server_state;
     StateMachineLog smr_log;
 
     // True once the PFA has connected to all peers.
