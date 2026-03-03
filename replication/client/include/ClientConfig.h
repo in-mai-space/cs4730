@@ -21,16 +21,16 @@ class ClientConfig {
      * @param server_port The server port number.
      * @param customers The number of customers.
      * @param orders The number of orders per customer.
-     * @param robot_type The type of robot (0 or 1).
+     * @param request_type The type of request (1, 2, or 3).
      */
     ClientConfig(std::string server_ip, int server_port, int customers,
-                 int orders, int robot_type);
+                 int orders, int request_type);
 
     std::string server_ip;
     int server_port;
     int customers;
     int orders;
-    int robot_type;
+    int request_type;
 };
 
 /**
@@ -40,7 +40,7 @@ class ClientConfig {
  * argv[2]: server_port (int)
  * argv[3]: num_customers (int)
  * argv[4]: num_orders (int)
- * argv[5]: robot_type (int 0 or 1)
+ * argv[5]: request_type (int 1, 2, or 3)
  *
  * Example: ./client 123.456.789.123 12345 16 1000 0
  */

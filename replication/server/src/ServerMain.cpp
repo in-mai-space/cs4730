@@ -14,13 +14,12 @@
 
 void start_server(const ServerConfig& config);
 void handle_client_thread(ServerStub* stub, int client_fd, int engineer_id,
-                          ExpertRequestQueue& expertQueue);
+                          AdminRequestQueue& adminQueue);
 void initialize_engineer_threads(int id, ServerSocket& server_socket,
                                  ServerStub& server_stub,
-                                 ExpertRequestQueue& expertQueue);
-void initialize_expert_engineer_thread_pools(ServerStub& server_stub,
-                                             int num_expert_engineers,
-                                             ExpertRequestQueue& expertQueue);
+                                 AdminRequestQueue& adminQueue);
+void initialize_admin_thread(ServerStub& server_stub,
+                             AdminRequestQueue& adminQueue);
 
 int main(int argc, char* argv[]) {
     ServerConfig cfg = parse_server_config(argc, argv);
@@ -41,79 +40,48 @@ void start_server(const ServerConfig& config) {
     ServerStub server_stub;
     server_stub.init(&server_socket);
 
-    std::vector<std::thread> expert_engineer_threads;
-    std::mutex mtx;
-    std::condition_variable cv;
-    std::shared_ptr<std::queue<std::promise<Robot>>> jobQueue =
-        std::make_shared<std::queue<std::promise<Robot>>>();
-    ExpertRequestQueue expertQueue;
+    AdminRequestQueue adminQueue;
 
     std::cout << "Server is ready to accept connections..." << std::endl;
 
-    initialize_expert_engineer_thread_pools(
-        server_stub, config.expert_engineers, expertQueue);
+    // Start the single admin thread
+    initialize_admin_thread(server_stub, adminQueue);
+    // Accept connections (blocks forever)
     initialize_engineer_threads(config.expert_engineers, server_socket,
-                                server_stub, expertQueue);
+                                server_stub, adminQueue);
 }
 
 void handle_client_thread(ServerStub* stub, int client_fd, int engineer_id,
-                          ExpertRequestQueue& expertQueue) {
-    stub->handle_client_request(client_fd, engineer_id, expertQueue);
+                          AdminRequestQueue& adminQueue) {
+    stub->handle_client_request(client_fd, engineer_id, adminQueue);
 }
 
-// accept new connections and waits for new connections from client in a loop
+// Accept new connections in a loop; spawn an engineer thread per client.
 void initialize_engineer_threads(int id, ServerSocket& server_socket,
                                  ServerStub& server_stub,
-                                 ExpertRequestQueue& expertQueue) {
-    int engineer_id = id;  // starting engineer ID to ensure unique ID
+                                 AdminRequestQueue& adminQueue) {
+    int engineer_id = id;  // starting ID so it doesn't overlap with admin id 0
 
     while (true) {
-        // accept new client connection
         int client_fd = server_socket.accept();
         if (client_fd < 0) {
             std::cerr << "Failed to accept client" << std::endl;
             continue;
         }
+        std::cout << "New client connected: fd=" << client_fd << std::endl;
 
-        std::cout << "New client connected: " << client_fd << std::endl;
-
-        // create a new engineer thread to handle the client
         std::thread engineer_thread(handle_client_thread, &server_stub,
                                     client_fd, engineer_id++,
-                                    std::ref(expertQueue));
+                                    std::ref(adminQueue));
         engineer_thread.detach();
     }
 }
 
-void expert_engineers_wait_and_execute_job(int id,
-                                           ExpertRequestQueue& expertQueue,
-                                           ServerStub& server_stub) {
-    std::cout << "[Expert Engineer " << id << "] Thread started." << std::endl;
-    while (true) {
-        std::unique_lock<std::mutex> lock(expertQueue.mtx);
-
-        while (expertQueue.jobQueue.empty()) {
-            expertQueue.cv.wait(lock);
-        }
-
-        std::cout << "[Expert Engineer " << id << "] Dequeued a request."
-                  << std::endl;
-        ExpertRequest req = std::move(expertQueue.jobQueue.front());
-        expertQueue.jobQueue.pop();
-
-        lock.unlock();
-        server_stub.attach_special_module(std::move(req), id);
-    }
-}
-
-void initialize_expert_engineer_thread_pools(ServerStub& server_stub,
-                                             int num_expert_engineers,
-                                             ExpertRequestQueue& expertQueue) {
-    for (int i = 0; i < num_expert_engineers; ++i) {
-        std::cout << "[Expert Engineer " << i << "] Initializing thread."
-                  << std::endl;
-        std::thread expert_thread(expert_engineers_wait_and_execute_job, i,
-                                  std::ref(expertQueue), std::ref(server_stub));
-        expert_thread.detach();
-    }
+// Start exactly one admin thread
+void initialize_admin_thread(ServerStub& server_stub,
+                             AdminRequestQueue& adminQueue) {
+    std::cout << "[Admin 0] Initializing admin thread." << std::endl;
+    std::thread admin_thread(&ServerStub::admin_process_requests,
+                             &server_stub, 0, std::ref(adminQueue));
+    admin_thread.detach();
 }

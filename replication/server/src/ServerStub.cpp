@@ -2,111 +2,120 @@
 
 #include <unistd.h>
 
-#include <chrono>
 #include <iostream>
-#include <queue>
-#include <thread>
 
+#include "../../common/include/CustomerRecords.h"
 #include "../../common/include/Robot.h"
 #include "../../common/include/RobotOrder.h"
 
-void ServerStub::init(ServerSocket* socket) { this->socket = socket; }
-
-Robot ServerStub::process_order(const RobotOrder& order, int engineer_id) {
-    Robot robot(order.customer_id, order.order_number, order.request_type,
-                engineer_id, -1);  // -1 since expert_id is not assigned yet
-    return robot;
+void ServerStub::init(ServerSocket* socket) {
+    this->socket = socket;
+    this->customerRecords = CustomerRecords();
 }
 
-void ServerStub::attach_special_module(ExpertRequest req, int expert_id) {
-    std::cout << "[Expert Engineer " << expert_id
-              << "] Received robot, adding special module..." << std::endl;
-    std::this_thread::sleep_for(std::chrono::microseconds(100));
-    req.robot.admin_id = expert_id;
-    std::cout << "[Expert Engineer " << expert_id
-              << "] Special module added, returning robot." << std::endl;
-    req.promise.set_value(req.robot);
+// ---- Admin thread: updates log + map, fulfills promise ----
+void ServerStub::admin_process_requests(int admin_id,
+                                        AdminRequestQueue& adminQueue) {
+    std::cout << "[Admin " << admin_id << "] Thread started." << std::endl;
+    while (true) {
+        std::unique_lock<std::mutex> lock(adminQueue.mtx);
+        adminQueue.cv.wait(lock, [&] { return !adminQueue.jobQueue.empty(); });
+        AdminRequest req = std::move(adminQueue.jobQueue.front());
+        adminQueue.jobQueue.pop();
+        lock.unlock();
+
+        std::cout << "[Admin " << admin_id
+                  << "] Processing customer_id=" << req.robot.customer_id
+                  << " order_number=" << req.robot.order_number << std::endl;
+
+        {
+            std::lock_guard<std::mutex> wlock(records_mutex);
+            smr_log.add_operation(1, req.robot.customer_id,
+                                  req.robot.order_number);
+            customerRecords.update_record(req.robot.customer_id,
+                                          req.robot.order_number);
+        }
+
+        req.robot.admin_id = admin_id;
+        req.promise.set_value(req.robot);
+    }
 }
 
 void ServerStub::handle_client_request(int client_fd, int engineer_id,
-                                       ExpertRequestQueue& expertQueue) {
-    RobotOrder order(0, 0, 0);
+                                       AdminRequestQueue& adminQueue) {
+    RobotOrder request(0, 0, 0);
 
     while (true) {
-        std::cout << "[Engineer " << engineer_id
-                  << "] Waiting for order from client " << client_fd
-                  << std::endl;
-        if (!receive_order(order, client_fd)) {
+        if (!ReceiveRequest(request, client_fd)) {
             std::cout << "[Engineer " << engineer_id << "] Client " << client_fd
-                      << " disconnected or error receiving order." << std::endl;
+                      << " disconnected." << std::endl;
             break;
         }
-        std::cout << "[Engineer " << engineer_id
-                  << "] Received order: customer_id=" << order.customer_id
-                  << ", order_number=" << order.order_number
-                  << ", request_type=" << order.request_type << std::endl;
 
-        Robot response = process_order(order, engineer_id);
         std::cout << "[Engineer " << engineer_id
-                  << "] Processed order, robot info: customer_id="
-                  << response.customer_id
-                  << ", order_number=" << response.order_number
-                  << ", request_type=" << response.request_type
-                  << ", engineer_id=" << response.engineer_id << std::endl;
-        if (is_special_robot(response.request_type)) {
-            std::cout << "[Engineer " << engineer_id << "] Robot is SPECIAL."
-                      << std::endl;
-            std::cout << "[Engineer " << engineer_id
-                      << "] Special robot requested, sending to expert queue..."
-                      << std::endl;
-            ExpertRequest req{response, std::promise<Robot>()};
-            std::future<Robot> completion_future = req.promise.get_future();
+                  << "] Received request: customer_id=" << request.customer_id
+                  << ", order_number=" << request.order_number
+                  << ", request_type=" << request.request_type << std::endl;
+
+        if (request.request_type == 1) {
+            Robot robot(request.customer_id, request.order_number,
+                        request.request_type, engineer_id, -1);
+
+            std::promise<Robot> p;
+            std::future<Robot> fut = p.get_future();
             {
-                std::lock_guard<std::mutex> lock(expertQueue.mtx);
-                expertQueue.jobQueue.push(std::move(req));
+                std::lock_guard<std::mutex> lock(adminQueue.mtx);
+                adminQueue.jobQueue.push(AdminRequest{robot, std::move(p)});
             }
-            expertQueue.cv.notify_one();
-            response = completion_future.get();
-            std::cout << "[Engineer " << engineer_id
-                      << "] Received robot with admin module, admin_id="
-                      << response.admin_id << std::endl;
-        } else {
-            std::cout << "[Engineer " << engineer_id << "] Robot is REGULAR."
-                      << std::endl;
-        }
+            adminQueue.cv.notify_one();
 
-        std::cout << "[Engineer " << engineer_id
-                  << "] Shipping robot to client " << client_fd << std::endl;
-        if (!ship_robot(response, client_fd)) {
+            robot = fut.get();
             std::cout << "[Engineer " << engineer_id
-                      << "] Failed to send response to client " << client_fd
+                      << "] Shipping robot (admin_id=" << robot.admin_id
+                      << ")" << std::endl;
+            if (!ShipRobot(robot, client_fd)) {
+                std::cerr << "[Engineer " << engineer_id
+                          << "] Failed to ship robot." << std::endl;
+                break;
+            }
+
+        } else if (request.request_type == 2) {
+            CustomerRecord record;
+            {
+                std::lock_guard<std::mutex> rlock(records_mutex);
+                record = customerRecords.get_record(request.customer_id);
+            }
+            std::cout << "[Engineer " << engineer_id
+                      << "] Returning record: customer_id="
+                      << record.customer_id
+                      << ", last_order=" << record.last_order << std::endl;
+            if (!ReturnRecord(record, client_fd)) {
+                std::cerr << "[Engineer " << engineer_id
+                          << "] Failed to return record." << std::endl;
+                break;
+            }
+
+        } else {
+            std::cerr << "[Engineer " << engineer_id
+                      << "] Unknown request_type=" << request.request_type
                       << std::endl;
             break;
         }
-        std::cout << "[Engineer " << engineer_id << "] Robot shipped to client "
-                  << client_fd << std::endl;
     }
 
-    std::cout << "[Engineer " << engineer_id
-              << "] Closing connection to client " << client_fd << std::endl;
+    std::cout << "[Engineer " << engineer_id << "] Closing connection "
+              << client_fd << std::endl;
     close(client_fd);
 }
 
-bool ServerStub::is_special_robot(int robot_type) {
-    switch (robot_type) {
-        case 1:
-            return true;
-        case 0:
-            return false;
-        default:
-            throw std::invalid_argument("Invalid robot type");
-    }
+bool ServerStub::ReceiveRequest(RobotOrder& request, int client_fd) {
+    return socket && socket->receive(request, client_fd);
 }
 
-bool ServerStub::receive_order(RobotOrder& order, int client_fd) {
-    return socket && socket->receive(order, client_fd);
-}
-
-bool ServerStub::ship_robot(const Robot& robot, int client_fd) {
+bool ServerStub::ShipRobot(const Robot& robot, int client_fd) {
     return socket && socket->send(robot, client_fd);
+}
+
+bool ServerStub::ReturnRecord(const CustomerRecord& record, int client_fd) {
+    return socket && socket->send(record, client_fd);
 }

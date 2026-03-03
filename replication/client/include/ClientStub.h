@@ -5,6 +5,7 @@
 #include <string>
 #include <vector>
 
+#include "../../common/include/CustomerRecords.h"
 #include "../../common/include/Robot.h"
 #include "../../common/include/RobotOrder.h"
 #include "ClientSocket.h"
@@ -16,22 +17,20 @@ struct LatencyRecorder {
 
 class ClientStub {
    public:
-    /**
-     * Initializes the client stub by connecting to the server.
-     * @param ip The server IP address.
-     * @param port The server port number.
-     */
     void init(const std::string& ip, int port);
 
     /**
-     * Places orders to the server and records latencies.
-     * @param details The template RobotOrder containing order details.
-     * @param customer_id The ID of the customer placing the orders.
-     * @param recorder A LatencyRecorder struct to store the latencies of each
-     * order.
+     * Order: sends `orders` robot-order requests (request_type=1) and
+     * receives robot information for each. Records latencies.
      */
-    bool order(const RobotOrder& details, int customer_id,
+    bool Order(const RobotOrder& tmpl, int customer_id,
                LatencyRecorder& recorder);
+
+    /**
+     * ReadRecord: sends a single customer-record read request (request_type=2)
+     * and receives the CustomerRecord. Returns the record.
+     */
+    CustomerRecord ReadRecord(const RobotOrder& request);
 
    private:
     ClientSocket socket;

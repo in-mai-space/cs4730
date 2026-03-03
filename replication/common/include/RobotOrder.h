@@ -6,7 +6,7 @@ class RobotOrder {
    public:
     int customer_id;
     int order_number;
-    int request_type;  // 0 or 1
+    int request_type;
 
     RobotOrder(int cust_id, int order_num, int robot_t);
 };

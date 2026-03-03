@@ -12,15 +12,15 @@ ClientConfig::ClientConfig()
       server_port(DEFAULT_SERVER_PORT),
       customers(1),
       orders(1),
-      robot_type(0) {}
+      request_type(0) {}
 
 ClientConfig::ClientConfig(std::string server_ip, int server_port,
-                           int customers, int orders, int robot_type)
+                           int customers, int orders, int request_type)
     : server_ip(std::move(server_ip)),
       server_port(server_port),
       customers(customers),
       orders(orders),
-      robot_type(robot_type) {}
+      request_type(request_type) {}
 
 static bool parse_int(const char* value, int& out) {
     if (!value || *value == '\0') {
@@ -51,7 +51,7 @@ ClientConfig parse_and_validate_client_config(int argc, char* argv[]) {
     int port = 0;
     int num_customers = 0;
     int num_orders = 0;
-    int robot_type = 0;
+    int request_type = 0;
 
     if (!parse_int(argv[2], port) || port <= 0 || port > 65535) {
         std::cerr << "Invalid port: " << argv[2] << std::endl;
@@ -65,12 +65,12 @@ ClientConfig parse_and_validate_client_config(int argc, char* argv[]) {
         std::cerr << "Invalid number of orders: " << argv[4] << std::endl;
         exit(1);
     }
-    if (std::string(argv[5]) != "0" && std::string(argv[5]) != "1") {
-        std::cerr << "Invalid robot type (must be 0 or 1): " << argv[5]
+    if (std::string(argv[5]) != "1" && std::string(argv[5]) != "2" && std::string(argv[5]) != "3") {
+        std::cerr << "Invalid request type (must be 1, 2, or 3): " << argv[5]
                   << std::endl;
         exit(1);
     }
-    robot_type = std::stoi(argv[5]);
+    request_type = std::stoi(argv[5]);
 
-    return ClientConfig(argv[1], port, num_customers, num_orders, robot_type);
+    return ClientConfig(argv[1], port, num_customers, num_orders, request_type);
 }

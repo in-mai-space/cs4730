@@ -2,6 +2,7 @@
 #define SERVERSOCKET_H
 #include <cstddef>
 
+#include "../../common/include/CustomerRecords.h"
 #include "../../common/include/Robot.h"
 #include "../../common/include/RobotOrder.h"
 
@@ -29,6 +30,13 @@ class ServerSocket {
     bool send(const Robot& robot, int client_fd = -1);
 
     /**
+     * Sends a CustomerRecord to the specified client.
+     * @param record The CustomerRecord to send.
+     * @param client_fd The file descriptor of the client socket.
+     */
+    bool send(const CustomerRecord& record, int client_fd = -1);
+
+    /**
      * Receives a RobotOrder from the specified client.
      * @param order The RobotOrder object to populate with received data.
      * @param client_fd The file descriptor of the client socket.
@@ -44,17 +52,16 @@ class ServerSocket {
    private:
     /**
      * Marshalls a Robot into a byte buffer.
-     * @param robot The Robot to marshall.
-     * @param buffer The buffer to write the marshalled data into.
-     * @param buffer_size The size of the buffer.
      */
     int marshall(const Robot& robot, char* buffer, int buffer_size);
 
     /**
+     * Marshalls a CustomerRecord into a byte buffer.
+     */
+    int marshall(const CustomerRecord& record, char* buffer, int buffer_size);
+
+    /**
      * Unmarshalls a byte buffer into a RobotOrder.
-     * @param buffer The buffer containing the marshalled data.
-     * @param buffer_size The size of the buffer.
-     * @param order The RobotOrder object to populate with unmarshalled data.
      */
     int unmarshall(const char* buffer, int buffer_size, RobotOrder& order);
 

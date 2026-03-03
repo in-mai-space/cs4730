@@ -6,6 +6,8 @@
 
 #include <cstring>
 
+#include "../../common/include/CustomerRecords.h"
+
 ClientSocket::ClientSocket() : sock_fd(-1) {}
 
 bool ClientSocket::connect(const std::string& ip, int port) {
@@ -102,4 +104,21 @@ int ClientSocket::unmarshall(const char* buffer, int buffer_size,
     order.admin_id = ntohl(net_admin_id);
 
     return 5 * sizeof(int);
+}
+
+bool ClientSocket::receive(CustomerRecord& record) {
+    char buffer[2 * sizeof(int)];
+    if (!receive_all(buffer, sizeof(buffer))) return false;
+    return unmarshall(buffer, sizeof(buffer), record) > 0;
+}
+
+int ClientSocket::unmarshall(const char* buffer, int buffer_size,
+                             CustomerRecord& record) {
+    if (buffer_size < 2 * (int)sizeof(int)) return -1;
+    int net_customer_id = 0, net_last_order = 0;
+    std::memcpy(&net_customer_id, buffer, sizeof(int));
+    std::memcpy(&net_last_order, buffer + sizeof(int), sizeof(int));
+    record.customer_id = ntohl(net_customer_id);
+    record.last_order = ntohl(net_last_order);
+    return 2 * sizeof(int);
 }

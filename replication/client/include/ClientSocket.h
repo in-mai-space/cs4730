@@ -4,6 +4,8 @@
 #include <cstddef>
 #include <string>
 
+#include "../../common/include/CustomerRecords.h"
+#include "../../common/include/Robot.h"
 #include "../../common/include/RobotOrder.h"
 
 class ClientSocket {
@@ -32,6 +34,12 @@ class ClientSocket {
      */
     bool receive(Robot& order);
 
+    /**
+     * Receives a CustomerRecord from the server.
+     * @param record The CustomerRecord object to populate with received data.
+     */
+    bool receive(CustomerRecord& record);
+
    private:
     /**
      * Marshalls a RobotOrder into a byte buffer.
@@ -40,14 +48,8 @@ class ClientSocket {
      * @param buffer_size The size of the buffer.
      */
     int marshall(const RobotOrder& order, char* buffer, int buffer_size);
-
-    /**
-     * Unmarshalls a byte buffer into a Robot.
-     * @param buffer The buffer containing the marshalled data.
-     * @param buffer_size The size of the buffer.
-     * @param order The Robot object to populate with unmarshalled data.
-     */
     int unmarshall(const char* buffer, int buffer_size, Robot& order);
+    int unmarshall(const char* buffer, int buffer_size, CustomerRecord& record);
 
     /**
      * Sends all data in the buffer to the server.

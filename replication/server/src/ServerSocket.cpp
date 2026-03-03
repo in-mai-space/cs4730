@@ -7,6 +7,7 @@
 #include <cstring>
 #include <iostream>
 
+#include "../../common/include/CustomerRecords.h"
 #include "../../common/include/Robot.h"
 #include "../../common/include/RobotOrder.h"
 
@@ -133,4 +134,22 @@ int ServerSocket::unmarshall(const char* buffer, int buffer_size,
     order.request_type = ntohl(net_request_type);
 
     return 3 * sizeof(int);
+}
+
+bool ServerSocket::send(const CustomerRecord& record, int client_fd) {
+    int fd = (client_fd != -1) ? client_fd : this->client_fd;
+    char buffer[2 * sizeof(int)];
+    int len = marshall(record, buffer, sizeof(buffer));
+    if (len <= 0) return false;
+    return send_all(buffer, len, fd);
+}
+
+int ServerSocket::marshall(const CustomerRecord& record, char* buffer,
+                           int buffer_size) {
+    if (buffer_size < 2 * (int)sizeof(int)) return -1;
+    int net_customer_id = htonl(record.customer_id);
+    int net_last_order = htonl(record.last_order);
+    std::memcpy(buffer, &net_customer_id, sizeof(int));
+    std::memcpy(buffer + sizeof(int), &net_last_order, sizeof(int));
+    return 2 * sizeof(int);
 }
