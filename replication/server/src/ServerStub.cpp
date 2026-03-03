@@ -13,7 +13,6 @@ void ServerStub::init(ServerSocket* socket) {
     this->customerRecords = CustomerRecords();
 }
 
-// ---- Admin thread: updates log + map, fulfills promise ----
 void ServerStub::admin_process_requests(int admin_id,
                                         AdminRequestQueue& adminQueue) {
     std::cout << "[Admin " << admin_id << "] Thread started." << std::endl;
@@ -41,6 +40,40 @@ void ServerStub::admin_process_requests(int admin_id,
     }
 }
 
+bool ServerStub::handle_robot_order(const RobotOrder& request, int engineer_id,
+                                    int client_fd,
+                                    AdminRequestQueue& adminQueue) {
+    Robot robot(request.customer_id, request.order_number,
+                request.request_type, engineer_id, -1);
+
+    std::promise<Robot> p;
+    std::future<Robot> fut = p.get_future();
+    {
+        std::lock_guard<std::mutex> lock(adminQueue.mtx);
+        adminQueue.jobQueue.push(AdminRequest{robot, std::move(p)});
+    }
+    adminQueue.cv.notify_one();
+
+    robot = fut.get();
+    std::cout << "[Engineer " << engineer_id
+              << "] Shipping robot (admin_id=" << robot.admin_id << ")"
+              << std::endl;
+    return ShipRobot(robot, client_fd);
+}
+
+bool ServerStub::handle_record_read(const RobotOrder& request, int engineer_id,
+                                    int client_fd) {
+    CustomerRecord record;
+    {
+        std::lock_guard<std::mutex> rlock(records_mutex);
+        record = customerRecords.get_record(request.customer_id);
+    }
+    std::cout << "[Engineer " << engineer_id
+              << "] Returning record: customer_id=" << record.customer_id
+              << ", last_order=" << record.last_order << std::endl;
+    return ReturnRecord(record, client_fd);
+}
+
 void ServerStub::handle_client_request(int client_fd, int engineer_id,
                                        AdminRequestQueue& adminQueue) {
     RobotOrder request(0, 0, 0);
@@ -57,47 +90,22 @@ void ServerStub::handle_client_request(int client_fd, int engineer_id,
                   << ", order_number=" << request.order_number
                   << ", request_type=" << request.request_type << std::endl;
 
+        bool ok = false;
         if (request.request_type == 1) {
-            Robot robot(request.customer_id, request.order_number,
-                        request.request_type, engineer_id, -1);
-
-            std::promise<Robot> p;
-            std::future<Robot> fut = p.get_future();
-            {
-                std::lock_guard<std::mutex> lock(adminQueue.mtx);
-                adminQueue.jobQueue.push(AdminRequest{robot, std::move(p)});
-            }
-            adminQueue.cv.notify_one();
-
-            robot = fut.get();
-            std::cout << "[Engineer " << engineer_id
-                      << "] Shipping robot (admin_id=" << robot.admin_id
-                      << ")" << std::endl;
-            if (!ShipRobot(robot, client_fd)) {
-                std::cerr << "[Engineer " << engineer_id
-                          << "] Failed to ship robot." << std::endl;
-                break;
-            }
-
+            ok = handle_robot_order(request, engineer_id, client_fd,
+                                    adminQueue);
         } else if (request.request_type == 2) {
-            CustomerRecord record;
-            {
-                std::lock_guard<std::mutex> rlock(records_mutex);
-                record = customerRecords.get_record(request.customer_id);
-            }
-            std::cout << "[Engineer " << engineer_id
-                      << "] Returning record: customer_id="
-                      << record.customer_id
-                      << ", last_order=" << record.last_order << std::endl;
-            if (!ReturnRecord(record, client_fd)) {
-                std::cerr << "[Engineer " << engineer_id
-                          << "] Failed to return record." << std::endl;
-                break;
-            }
-
+            ok = handle_record_read(request, engineer_id, client_fd);
         } else {
             std::cerr << "[Engineer " << engineer_id
                       << "] Unknown request_type=" << request.request_type
+                      << std::endl;
+            break;
+        }
+
+        if (!ok) {
+            std::cerr << "[Engineer " << engineer_id
+                      << "] Failed to send response, closing connection."
                       << std::endl;
             break;
         }

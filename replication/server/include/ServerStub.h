@@ -35,12 +35,21 @@ class ServerStub {
     // Admin thread: dequeues requests, updates log+map, fulfills promise.
     void admin_process_requests(int admin_id, AdminRequestQueue& adminQueue);
 
-    // ---- Client-facing transport stubs ----
     bool ReceiveRequest(RobotOrder& request, int client_fd);
     bool ShipRobot(const Robot& robot, int client_fd);
     bool ReturnRecord(const CustomerRecord& record, int client_fd);
 
    private:
+    // Handles a robot-order request (request_type == 1).
+    // Returns false if the connection should be closed.
+    bool handle_robot_order(const RobotOrder& request, int engineer_id,
+                            int client_fd, AdminRequestQueue& adminQueue);
+
+    // Handles a record-read request (request_type == 2).
+    // Returns false if the connection should be closed.
+    bool handle_record_read(const RobotOrder& request, int engineer_id,
+                            int client_fd);
+
     ServerSocket* socket;
 
     CustomerRecords customerRecords;
