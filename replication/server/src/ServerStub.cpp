@@ -302,7 +302,7 @@ bool ServerStub::process_request(const RobotOrder& request, int client_fd,
     if (request.request_type == 2) {
         return handle_record_read(request, engineer_id, client_fd);
     }
-
+    
     std::cerr << "[Engineer " << engineer_id
               << "] Unknown request_type=" << request.request_type << std::endl;
 

@@ -157,27 +157,17 @@ bool ClientStub::ReadRecords(int customer_id,
 bool ClientStub::ScanRecords(int max_customer_id,
                              LatencyRecorder& recorder) {
     for (int cid = 0; cid <= max_customer_id; cid++) {
-
-        RobotOrder req(cid, -1, 3);
-
+        RobotOrder req(cid, -1, 2);
         auto start = std::chrono::high_resolution_clock::now();
-
-        CustomerRecord rec = scan_records(req);
-
+        CustomerRecord rec = read_record(req);
         auto end = std::chrono::high_resolution_clock::now();
-
-        auto latency =
-            std::chrono::duration_cast<std::chrono::microseconds>(end - start)
-                .count();
-
+        auto latency = std::chrono::duration_cast<std::chrono::microseconds>(end - start).count();
         {
             std::lock_guard<std::mutex> lock(recorder.mutex);
             recorder.latencies.push_back(latency);
         }
-
         if (rec.customer_id != -1) {
-            std::cout << rec.customer_id << "\t"
-                      << rec.last_order << std::endl;
+            std::cout << rec.customer_id << "\t" << rec.last_order << std::endl;
         }
     }
 

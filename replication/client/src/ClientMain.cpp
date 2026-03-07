@@ -83,26 +83,28 @@ void initialize_customer_threads(
     std::vector<std::shared_ptr<ClientStub>>& client_stubs,
     LatencyRecorder& recorder) {
 
-    for (int i = 0; i < cfg.customers; i++) {
+    if (cfg.request_type == 3) {
         auto stub = std::make_shared<ClientStub>();
         stub->init(cfg.server_ip, cfg.server_port);
         client_stubs.push_back(stub);
 
-        switch (cfg.request_type) {
-            case 1:
+        customer_threads.push_back(
+            start_scan_thread(stub, cfg, recorder));
+    } 
+    else {
+        for (int i = 0; i < cfg.customers; i++) {
+            auto stub = std::make_shared<ClientStub>();
+            stub->init(cfg.server_ip, cfg.server_port);
+            client_stubs.push_back(stub);
+
+            if (cfg.request_type == 1) {
                 customer_threads.push_back(
                     start_robot_order_thread(stub, i, cfg, recorder));
-                break;
-
-            case 2:
+            }
+            else if (cfg.request_type == 2) {
                 customer_threads.push_back(
                     start_record_read_thread(stub, i, cfg, recorder));
-                break;
-
-            case 3:
-                customer_threads.push_back(
-                    start_scan_thread(stub, cfg, recorder)); // only start one thread for scanning
-                break;
+            }
         }
     }
 
