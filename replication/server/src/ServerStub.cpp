@@ -362,23 +362,29 @@ bool ServerStub::try_reconnect_and_catchup(int peer_index) {
 bool ServerStub::ReceiveRequest(RobotOrder& request, int client_fd) {
     return socket && socket->receive(request, client_fd);
 }
+
 bool ServerStub::ShipRobot(const Robot& robot, int client_fd) {
     return socket && socket->send(robot, client_fd);
 }
+
 bool ServerStub::ReturnRecord(const CustomerRecord& record, int client_fd) {
     return socket && socket->send(record, client_fd);
 }
+
 bool ServerStub::SendReplicationRequest(const ReplicationRequest& request,
                                         int peer_index) {
     return socket && socket->send_replication_request(request, peer_index);
 }
+
 bool ServerStub::ReceiveReplicationRequest(ReplicationRequest& request,
                                            int client_fd) {
     return socket && socket->receive_replication_request(request, client_fd);
 }
+
 bool ServerStub::SendReplicationResponse(int client_fd) {
     return socket && socket->send_ack(client_fd);
 }
+
 bool ServerStub::ReceiveReplicationResponse(int peer_index) {
     return socket && socket->receive_ack_from_peer(peer_index);
 }

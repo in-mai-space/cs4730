@@ -45,9 +45,8 @@ void start_server(const ServerConfig& config) {
 
     std::cout << "Server is ready to accept connections..." << std::endl;
 
-    // start the single admin thread
     initialize_admin_thread(server_stub, adminQueue);
-    // accept connections (blocks forever); engineer IDs start at 1 (admin is 0)
+    // engineer IDs start at 1 (admin is 0)
     initialize_engineer_threads(1, server_socket, server_stub, adminQueue);
 }
 
