@@ -25,8 +25,6 @@ class ServerSocket {
 
     bool identify_as_server(int client_fd);
 
-    bool send_heartbeat(int peer_index);
-
     bool receive_identification(int& type, int client_fd);
 
     bool send_ack(int client_fd);

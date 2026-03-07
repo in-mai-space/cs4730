@@ -163,16 +163,6 @@ bool ServerSocket::receive_identification(int& type, int client_fd) {
     return true;
 }
 
-bool ServerSocket::send_heartbeat(int peer_index) {
-    if (peer_index < 0 || peer_index >= (int)peer_fds.size()) return false;
-
-    int fd = peer_fds[peer_index];
-
-    int type = htonl(MSG_HEARTBEAT);
-
-    return send_all((char*)&type, sizeof(int), fd);
-}
-
 bool ServerSocket::send(const Robot& robot, int client_fd) {
     int fd = (client_fd != -1) ? client_fd : this->client_fd;
 
