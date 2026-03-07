@@ -81,7 +81,7 @@ void initialize_engineer_threads(int id, ServerSocket& server_socket,
 void initialize_admin_thread(ServerStub& server_stub,
                              AdminRequestQueue& adminQueue) {
     std::cout << "[Admin 0] Initializing admin thread." << std::endl;
-    std::thread admin_thread(&ServerStub::AdminProcessRequests, &server_stub,
-                             0, std::ref(adminQueue));
+    std::thread admin_thread(&ServerStub::AdminProcessRequests, &server_stub, 0,
+                             std::ref(adminQueue));
     admin_thread.detach();
 }

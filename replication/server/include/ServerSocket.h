@@ -1,16 +1,16 @@
 #ifndef SERVERSOCKET_H
 #define SERVERSOCKET_H
-#include <vector>
 #include <string>
+#include <vector>
 
+#include "../../common/include/CustomerRecords.h"
 #include "../../common/include/Robot.h"
 #include "../../common/include/RobotOrder.h"
-#include "../../common/include/CustomerRecords.h"
 #include "./ReplicationRequest.h"
 #include "./ServerConfig.h"
 
 class ServerSocket {
-public:
+   public:
     ServerSocket();
 
     bool listen(int port);
@@ -20,6 +20,8 @@ public:
 
     // Reconnect a single peer (used when a failed server restarts).
     bool reconnect_peer(int index, const PeerInfo& peer);
+
+    bool is_peer_connected(int index) const;
 
     bool identify_as_server(int client_fd);
 
@@ -49,7 +51,7 @@ public:
 
     int get_peer_index(int fd);
 
-private:
+   private:
     int socket_fd;
     int client_fd;
 

@@ -34,7 +34,7 @@ bool ClientSocket::connect(const std::string& ip, int port) {
 }
 
 bool ClientSocket::identify_as_customer() {
-    int net_type = htonl(0); // 0 represents a customer
+    int net_type = htonl(0);  // 0 represents a customer
     return send_all(reinterpret_cast<const char*>(&net_type), sizeof(int));
 }
 
@@ -124,7 +124,7 @@ int ClientSocket::unmarshall(const char* buffer, int buffer_size,
 
     std::memcpy(&net_customer_id, buffer, sizeof(int));
     std::memcpy(&net_last_order, buffer + sizeof(int), sizeof(int));
-    
+
     record.customer_id = ntohl(net_customer_id);
     record.last_order = ntohl(net_last_order);
     return 2 * sizeof(int);

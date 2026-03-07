@@ -9,9 +9,9 @@
 #include "../../common/include/CustomerRecords.h"
 #include "../../common/include/Robot.h"
 #include "../../common/include/RobotOrder.h"
+#include "./ServerConfig.h"
 #include "./ServerSocket.h"
 #include "./ServerState.h"
-#include "./ServerConfig.h"
 
 struct AdminRequest {
     Robot robot;
@@ -31,18 +31,23 @@ class ServerStub {
     void init(ServerSocket* socket, const ServerConfig& config);
 
     /**
-     * Handles a client request. This method is called by engineer threads to process incoming requests from clients. 
+     * Handles a client request. This method is called by engineer threads to
+     * process incoming requests from clients.
      */
     void HandleClientRequest(int client_fd, int engineer_id,
-                               AdminRequestQueue& adminQueue);
+                             AdminRequestQueue& adminQueue);
 
     /**
-     * Processes admin requests. This method is run by the single admin thread to process incoming requests from engineers, replicate them to peers, and fulfill promises back to engineers.
+     * Processes admin requests. This method is run by the single admin thread
+     * to process incoming requests from engineers, replicate them to peers, and
+     * fulfill promises back to engineers.
      */
     void AdminProcessRequests(int admin_id, AdminRequestQueue& adminQueue);
 
     /**
-     * Processes a RobotOrder request from a client. If it's a new order, it will be processed through the PFA protocol. If it's a record read, it will return the requested record.
+     * Processes a RobotOrder request from a client. If it's a new order, it
+     * will be processed through the PFA protocol. If it's a record read, it
+     * will return the requested record.
      */
     bool ReceiveRequest(RobotOrder& request, int client_fd);
 
@@ -57,23 +62,30 @@ class ServerStub {
     bool ReturnRecord(const CustomerRecord& record, int client_fd);
 
     /**
-     * Sends a replication request to the specified peer and waits for an acknowledgement. Returns true if the peer acknowledged successfully, false otherwise.
+     * Sends a replication request to the specified peer and waits for an
+     * acknowledgement. Returns true if the peer acknowledged successfully,
+     * false otherwise.
      */
     bool SendReplicationRequest(const ReplicationRequest& request,
                                 int peer_index);
 
     /**
-     * Sends a replication response (acknowledgement) back to the peer that sent the replication request.
+     * Sends a replication response (acknowledgement) back to the peer that sent
+     * the replication request.
      */
     bool ReceiveReplicationRequest(ReplicationRequest& request, int client_fd);
 
     /**
-     * Receives a replication response (acknowledgement) from the specified peer. Returns true if the acknowledgement was received successfully, false otherwise.
+     * Receives a replication response (acknowledgement) from the specified
+     * peer. Returns true if the acknowledgement was received successfully,
+     * false otherwise.
      */
     bool SendReplicationResponse(int client_fd);
 
     /**
-     * Receives a replication response (acknowledgement) from the specified peer. Returns true if the acknowledgement was received successfully, false otherwise.
+     * Receives a replication response (acknowledgement) from the specified
+     * peer. Returns true if the acknowledgement was received successfully,
+     * false otherwise.
      */
     bool ReceiveReplicationResponse(int peer_index);
 
@@ -89,7 +101,7 @@ class ServerStub {
 
     int append_to_log(const Robot& robot);
 
-    void replicate_to_peers(const Robot& robot, int cur_last);
+    void replicate_to_peers(int cur_last);
 
     void commit_locally(const Robot& robot, int cur_last);
 
@@ -116,8 +128,7 @@ class ServerStub {
 
     // Reconnect a dead peer and replay all existing log entries to bring
     // it up-to-date before sending the current replication entry.
-    bool try_reconnect_and_catchup(int peer_index, int factory_id,
-                                   int cur_last);
+    bool try_reconnect_and_catchup(int peer_index);
 
     ServerSocket* socket;
     ServerConfig config;
@@ -136,19 +147,13 @@ class ServerStub {
     bool peers_connected;
     std::atomic<bool> running{true};
 
-    std::vector<std::chrono::steady_clock::time_point> peer_last_heartbeat;
-    std::vector<bool> peer_alive;
-    std::mutex heartbeat_mutex;
-
-    void start_heartbeat_sender();
-    void start_failure_detector();
-    void handle_heartbeat(int peer_index);
-
     std::mutex failure_queue_mutex;
     std::queue<int> failure_queue;
 
     std::chrono::steady_clock::time_point primary_lease_expiry;
     std::atomic<bool> has_primary_lease{false};
+    std::vector<bool> peer_alive;
+    std::vector<int> peer_last_index;
 };
 
 #endif
