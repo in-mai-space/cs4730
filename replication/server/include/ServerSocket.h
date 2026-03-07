@@ -37,9 +37,8 @@ class ServerSocket {
 
     /**
      * Sends an identification message on the given fd.
-     * type 0 = customer, type 1 = PFA/replication.
      */
-    bool send_identification(int type, int client_fd);
+    bool identify_as_server(int client_fd);
 
     /**
      * Receives an identification message from the given fd.

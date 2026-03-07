@@ -29,25 +29,51 @@ class ServerStub {
 
     void init(ServerSocket* socket, const ServerConfig& config);
 
-    // Engineer thread entry
-    void handle_client_request(int client_fd, int engineer_id,
+    /**
+     * Handles a client request. This method is called by engineer threads to process incoming requests from clients. 
+     */
+    void HandleClientRequest(int client_fd, int engineer_id,
                                AdminRequestQueue& adminQueue);
 
-    // Admin thread (PFA)
-    void admin_process_requests(int admin_id, AdminRequestQueue& adminQueue);
+    /**
+     * Processes admin requests. This method is run by the single admin thread to process incoming requests from engineers, replicate them to peers, and fulfill promises back to engineers.
+     */
+    void AdminProcessRequests(int admin_id, AdminRequestQueue& adminQueue);
 
-    // Socket wrappers
+    /**
+     * Processes a RobotOrder request from a client. If it's a new order, it will be processed through the PFA protocol. If it's a record read, it will return the requested record.
+     */
     bool ReceiveRequest(RobotOrder& request, int client_fd);
+
+    /**
+     * Sends a Robot response back to the client.
+     */
     bool ShipRobot(const Robot& robot, int client_fd);
+
+    /**
+     * Sends a CustomerRecord response back to the client.
+     */
     bool ReturnRecord(const CustomerRecord& record, int client_fd);
 
+    /**
+     * Sends a replication request to the specified peer and waits for an acknowledgement. Returns true if the peer acknowledged successfully, false otherwise.
+     */
     bool SendReplicationRequest(const ReplicationRequest& request,
                                 int peer_index);
 
+    /**
+     * Sends a replication response (acknowledgement) back to the peer that sent the replication request.
+     */
     bool ReceiveReplicationRequest(ReplicationRequest& request, int client_fd);
 
+    /**
+     * Receives a replication response (acknowledgement) from the specified peer. Returns true if the acknowledgement was received successfully, false otherwise.
+     */
     bool SendReplicationResponse(int client_fd);
 
+    /**
+     * Receives a replication response (acknowledgement) from the specified peer. Returns true if the acknowledgement was received successfully, false otherwise.
+     */
     bool ReceiveReplicationResponse(int peer_index);
 
    private:

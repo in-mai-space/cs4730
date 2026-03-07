@@ -13,33 +13,42 @@ ServerStub::ServerStub() : socket(nullptr), peers_connected(false) {}
 void ServerStub::init(ServerSocket* socket, const ServerConfig& config) {
     this->socket = socket;
     this->config = config;
+
+    // initialize customer records for client to read
     this->customerRecords = CustomerRecords();
     this->peers_connected = false;
+
+    // initialize server state
     this->server_state.factory_id = config.factory_id;
     this->server_state.primary_id = -1;
     this->server_state.last_index = 0;
     this->server_state.committed_index = 0;
 }
 
-void ServerStub::admin_process_requests(int admin_id,
+void ServerStub::AdminProcessRequests(int admin_id,
                                         AdminRequestQueue& adminQueue) {
     std::cout << "[PFA " << admin_id
               << "] Thread started (factory_id=" << config.factory_id << ")."
               << std::endl;
 
     while (true) {
+        // wait for next request from the queue
         AdminRequest req = wait_for_admin_request(adminQueue);
 
         std::cout << "[PFA " << admin_id
                   << "] Processing customer_id=" << req.robot.customer_id
                   << " order_number=" << req.robot.order_number << std::endl;
 
+        // connect to peers if not already connected (only happens on first request)
         ensure_primary_and_connect_peers();
 
+        // appends the request to its own log and updates last index accordingly
         int cur_last = append_to_log(req.robot);
 
+        // sends replication request to backup nodes
         replicate_to_peers(req.robot, cur_last);
 
+        // applies the MapOp of last index in the smr log and assigns the last index value to committed index
         commit_locally(req.robot, cur_last);
 
         std::cout << "[PFA " << admin_id << "] Committed index=" << cur_last
@@ -153,8 +162,10 @@ void ServerStub::handle_replication_request(int client_fd) {
 
         log_replication_request(req);
 
+        // writes MapOp to req.last index of its smr log and update self.last index
         apply_replication_entry(req);
 
+        // applies MapOp in the req.committed index of smr log to the customer record and update self.committed index
         apply_committed_entry(req);
 
         if (!send_replication_ack(client_fd)) break;
@@ -254,7 +265,7 @@ bool ServerStub::handle_record_read(const RobotOrder& request, int engineer_id,
     return ReturnRecord(record, client_fd);
 }
 
-void ServerStub::handle_client_request(int client_fd, int engineer_id,
+void ServerStub::HandleClientRequest(int client_fd, int engineer_id,
                                        AdminRequestQueue& adminQueue) {
     int identity = -1;
 
@@ -263,6 +274,7 @@ void ServerStub::handle_client_request(int client_fd, int engineer_id,
         return;
     }
 
+    // replication request from server
     if (identity == 1) {
         handle_replication_request(client_fd);
         return;
@@ -270,9 +282,9 @@ void ServerStub::handle_client_request(int client_fd, int engineer_id,
 
     RobotOrder request(0, 0, 0);
 
+    // request from client
     while (true) {
         if (!ReceiveRequest(request, client_fd)) break;
-
         if (!process_request(request, client_fd, engineer_id, adminQueue))
             break;
     }

@@ -90,8 +90,7 @@ bool ServerSocket::connect_to_peers(const std::vector<PeerInfo>& peers) {
             return false;
         }
 
-        // Identify ourselves as PFA (type = 1).
-        if (!send_identification(1, peer_fd)) {
+        if (!identify_as_server(peer_fd)) {
             std::cerr << "Failed to send identification to peer " << peer.id
                       << std::endl;
             close(peer_fd);
@@ -105,8 +104,8 @@ bool ServerSocket::connect_to_peers(const std::vector<PeerInfo>& peers) {
     return true;
 }
 
-bool ServerSocket::send_identification(int type, int client_fd) {
-    int net_type = htonl(type);
+bool ServerSocket::identify_as_server(int client_fd) {
+    int net_type = htonl(1); // PFA type
     return send_all(reinterpret_cast<const char*>(&net_type), sizeof(int),
                     client_fd);
 }
