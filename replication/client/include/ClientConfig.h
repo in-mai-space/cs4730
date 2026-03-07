@@ -42,7 +42,7 @@ class ClientConfig {
  * argv[4]: num_orders (int)
  * argv[5]: request_type (int 1, 2, or 3)
  *
- * Example: ./client 123.456.789.123 12345 16 1000 0
+ * Example: ./client 123.456.789.123 12345 16 1000 2
  */
 ClientConfig parse_and_validate_client_config(int argc, char* argv[]);
 

@@ -7,8 +7,7 @@
 
 void ClientStub::init(const std::string& ip, int port) {
     if (!socket.connect(ip, port)) {
-        throw std::runtime_error("Failed to connect to server " + ip + ":" +
-                                 std::to_string(port));
+        throw std::runtime_error("Client terminates gracefully");
     }
 }
 
