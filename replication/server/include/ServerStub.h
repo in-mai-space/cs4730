@@ -11,6 +11,7 @@
 #include "../../common/include/RobotOrder.h"
 #include "./ServerSocket.h"
 #include "./ServerState.h"
+#include "./ServerConfig.h"
 
 struct AdminRequest {
     Robot robot;
@@ -80,8 +81,7 @@ class ServerStub {
     bool handle_robot_order(const RobotOrder& request, int engineer_id,
                             int client_fd, AdminRequestQueue& adminQueue);
 
-    bool handle_record_read(const RobotOrder& request, int engineer_id,
-                            int client_fd);
+    bool handle_record_read(const RobotOrder& request, int client_fd);
 
     AdminRequest wait_for_admin_request(AdminRequestQueue& adminQueue);
 
@@ -97,7 +97,9 @@ class ServerStub {
 
     void handle_replication_request(int client_fd);
 
-    void handle_pfa_disconnect(int client_fd);
+    void handle_pfa_disconnect();
+
+    void handle_ifa_disconnect(int peer_index);
 
     void log_replication_request(const ReplicationRequest& req);
 
@@ -109,6 +111,13 @@ class ServerStub {
 
     bool process_request(const RobotOrder& request, int client_fd,
                          int engineer_id, AdminRequestQueue& adminQueue);
+
+    void elect_new_primary();
+
+    // Reconnect a dead peer and replay all existing log entries to bring
+    // it up-to-date before sending the current replication entry.
+    bool try_reconnect_and_catchup(int peer_index, int factory_id,
+                                   int cur_last);
 
     ServerSocket* socket;
     ServerConfig config;
@@ -125,6 +134,21 @@ class ServerStub {
     StateMachineLog smr_log;
 
     bool peers_connected;
+    std::atomic<bool> running{true};
+
+    std::vector<std::chrono::steady_clock::time_point> peer_last_heartbeat;
+    std::vector<bool> peer_alive;
+    std::mutex heartbeat_mutex;
+
+    void start_heartbeat_sender();
+    void start_failure_detector();
+    void handle_heartbeat(int peer_index);
+
+    std::mutex failure_queue_mutex;
+    std::queue<int> failure_queue;
+
+    std::chrono::steady_clock::time_point primary_lease_expiry;
+    std::atomic<bool> has_primary_lease{false};
 };
 
 #endif

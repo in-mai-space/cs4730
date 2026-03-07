@@ -59,6 +59,7 @@ class ClientStub {
     CustomerRecord scan_records(const RobotOrder& request);
 
     ClientSocket socket;
+    std::atomic<bool> running{true};
 };
 
 #endif
