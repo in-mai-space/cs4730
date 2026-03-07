@@ -27,11 +27,11 @@ class ServerConfig {
  * Parses command line arguments to create a ServerConfig object.
  *
  * Format:
- *   ./server <port> <factory_id> <num_peers>
+ *   ./server_binary <port> <factory_id> <num_peers>
  *            [<peer_id> <peer_ip> <peer_port>] ...
  *
  * Example (factory 0, two peers):
- *   ./server 12345 0 2  1 127.0.0.1 12346  2 127.0.0.1 12347
+ *   ./server_binary 12345 0 2  1 127.0.0.1 12346  2 127.0.0.1 12347
  */
 ServerConfig parse_server_config(int argc, char* argv[]);
 
