@@ -15,14 +15,14 @@ bool ClientStub::Order(const RobotOrder& order_template, int customer_id,
     for (int i = 1; i <= order_template.order_number && running; i++) {
         RobotOrder request(customer_id, i, 1);
 
-        std::cout << "[Client " << customer_id << "] Sending robot order " << i
-                  << std::endl;
+        // std::cout << "[Client " << customer_id << "] Sending robot order " << i
+        //           << std::endl;
 
         auto start_time = std::chrono::high_resolution_clock::now();
 
         if (!socket.send(request)) {
-            std::cerr << "[Client " << customer_id
-                      << "] Primary server disconnected." << std::endl;
+            // std::cerr << "[Client " << customer_id
+            //           << "] Primary server disconnected." << std::endl;
             running = false;
             return false;
         }
@@ -34,9 +34,9 @@ bool ClientStub::Order(const RobotOrder& order_template, int customer_id,
             return false;
         }
 
-        std::cout << "[Client " << customer_id
-                  << "] Received robot: engineer_id=" << response.engineer_id
-                  << ", admin_id=" << response.admin_id << std::endl;
+        // std::cout << "[Client " << customer_id
+        //           << "] Received robot: engineer_id=" << response.engineer_id
+        //           << ", admin_id=" << response.admin_id << std::endl;
 
         auto end_time = std::chrono::high_resolution_clock::now();
 

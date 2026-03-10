@@ -47,10 +47,10 @@ void ServerStub::AdminProcessRequests(int admin_id,
 
         {
             std::lock_guard<std::mutex> sl(state_mutex);
-            std::cout << "[PFA " << admin_id
-                      << "] last_index=" << server_state.last_index
-                      << " committed_index=" << server_state.committed_index
-                      << std::endl;
+            // std::cout << "[PFA " << admin_id
+            //           << "] last_index=" << server_state.last_index
+            //           << " committed_index=" << server_state.committed_index
+            //           << std::endl;
         }
 
         fulfill_promise(req, admin_id);
@@ -257,9 +257,9 @@ void ServerStub::elect_new_primary() {
 
 // -------------------- Replication Helpers --------------------
 void ServerStub::log_replication_request(const ReplicationRequest& req) {
-    std::cout << "[IFA] Replication: factory_id=" << req.factory_id
-              << " last_index=" << req.last_index
-              << " committed_index=" << req.committed_index << std::endl;
+    // std::cout << "[IFA] Replication: factory_id=" << req.factory_id
+    //           << " last_index=" << req.last_index
+    //           << " committed_index=" << req.committed_index << std::endl;
 }
 
 void ServerStub::apply_replication_entry(const ReplicationRequest& req) {
