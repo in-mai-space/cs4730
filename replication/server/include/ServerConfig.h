@@ -4,7 +4,6 @@
 #include <string>
 #include <vector>
 
-// Info for one peer factory server
 struct PeerInfo {
     int id;
     std::string ip;

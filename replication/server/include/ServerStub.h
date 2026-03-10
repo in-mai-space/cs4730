@@ -33,6 +33,9 @@ class ServerStub {
     /**
      * Handles a client request. This method is called by engineer threads to
      * process incoming requests from clients.
+     * @param client_fd The file descriptor for the client connection.
+     * @param engineer_id The ID of the engineer thread handling this request.
+     * @param adminQueue The queue to submit admin requests to.
      */
     void HandleClientRequest(int client_fd, int engineer_id,
                              AdminRequestQueue& adminQueue);
@@ -41,6 +44,9 @@ class ServerStub {
      * Processes admin requests. This method is run by the single admin thread
      * to process incoming requests from engineers, replicate them to peers, and
      * fulfill promises back to engineers.
+     * @param admin_id The ID of the admin thread (for logging purposes).
+     * @param adminQueue The queue to receive admin requests from engineer
+     * threads.
      */
     void AdminProcessRequests(int admin_id, AdminRequestQueue& adminQueue);
 
@@ -48,16 +54,22 @@ class ServerStub {
      * Processes a RobotOrder request from a client. If it's a new order, it
      * will be processed through the PFA protocol. If it's a record read, it
      * will return the requested record.
+     * @param request The RobotOrder request received from the client.
+     * @param client_fd The file descriptor for the client connection.
      */
     bool ReceiveRequest(RobotOrder& request, int client_fd);
 
     /**
      * Sends a Robot response back to the client.
+     * @param robot The Robot object to send back to the client.
+     * @param client_fd The file descriptor for the client connection.
      */
     bool ShipRobot(const Robot& robot, int client_fd);
 
     /**
      * Sends a CustomerRecord response back to the client.
+     * @param record The CustomerRecord object to send back to the client.
+     * @param client_fd The file descriptor for the client connection.
      */
     bool ReturnRecord(const CustomerRecord& record, int client_fd);
 
@@ -65,27 +77,35 @@ class ServerStub {
      * Sends a replication request to the specified peer and waits for an
      * acknowledgement. Returns true if the peer acknowledged successfully,
      * false otherwise.
+     * @param request The ReplicationRequest to send to the peer.
+     * @param peer_index The index of the peer to send the request to.
      */
     bool SendReplicationRequest(const ReplicationRequest& request,
                                 int peer_index);
 
     /**
-     * Sends a replication response (acknowledgement) back to the peer that sent
-     * the replication request.
+     * Receives a replication request from a peer. Returns true if the request
+     * was received successfully, false otherwise.
+     * @param request The ReplicationRequest object to populate with the
+     * received request data.
+     * @param client_fd The file descriptor for the peer connection to receive
+     * the request from.
      */
     bool ReceiveReplicationRequest(ReplicationRequest& request, int client_fd);
 
     /**
-     * Receives a replication response (acknowledgement) from the specified
-     * peer. Returns true if the acknowledgement was received successfully,
-     * false otherwise.
+     * Sends a replication response (acknowledgement) back to the peer that sent
+     * the replication request.
+     * @param client_fd The file descriptor for the peer connection to send the
+     * acknowledgement to.
      */
     bool SendReplicationResponse(int client_fd);
 
     /**
-     * Receives a replication response (acknowledgement) from the specified
-     * peer. Returns true if the acknowledgement was received successfully,
-     * false otherwise.
+     * Receives a replication response (acknowledgement) from a peer. Returns
+     * true if the acknowledgement was received successfully, false otherwise.
+     * @param peer_index The index of the peer to receive the acknowledgement
+     * from.
      */
     bool ReceiveReplicationResponse(int peer_index);
 
@@ -124,10 +144,6 @@ class ServerStub {
     bool process_request(const RobotOrder& request, int client_fd,
                          int engineer_id, AdminRequestQueue& adminQueue);
 
-    void elect_new_primary();
-
-    // Reconnect a dead peer and replay all existing log entries to bring
-    // it up-to-date before sending the current replication entry.
     bool try_reconnect_and_catchup(int peer_index);
 
     ServerSocket* socket;
@@ -135,11 +151,9 @@ class ServerStub {
 
     CustomerRecords customerRecords;
 
-    // Protects customerRecords
-    std::mutex records_mutex;
+    std::mutex records_mutex;  // protects customerRecords
 
-    // Protects server_state and smr_log
-    std::mutex state_mutex;
+    std::mutex state_mutex;  // protects server_state and smr_log
 
     ServerState server_state;
     StateMachineLog smr_log;
@@ -147,11 +161,6 @@ class ServerStub {
     bool peers_connected;
     std::atomic<bool> running{true};
 
-    std::mutex failure_queue_mutex;
-    std::queue<int> failure_queue;
-
-    std::chrono::steady_clock::time_point primary_lease_expiry;
-    std::atomic<bool> has_primary_lease{false};
     std::vector<bool> peer_alive;
     std::vector<int> peer_last_index;
 };

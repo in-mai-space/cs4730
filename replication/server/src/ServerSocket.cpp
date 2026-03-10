@@ -49,7 +49,7 @@ int ServerSocket::accept() {
     return fd;
 }
 
-bool ServerSocket::connect_to_peers(const std::vector<PeerInfo>& peers) {
+bool ServerSocket::ConnectToPeers(const std::vector<PeerInfo>& peers) {
     peer_fds.assign(peers.size(), -1);
 
     for (size_t i = 0; i < peers.size(); i++) {
@@ -72,7 +72,7 @@ bool ServerSocket::connect_to_peers(const std::vector<PeerInfo>& peers) {
             continue;
         }
 
-        identify_as_server(fd);
+        IdentifyAsServer(fd);
         peer_fds[i] = fd;
 
         std::cout << "[PFA] Connected peer " << peer.id << std::endl;
@@ -81,15 +81,15 @@ bool ServerSocket::connect_to_peers(const std::vector<PeerInfo>& peers) {
     return true;
 }
 
-bool ServerSocket::is_peer_connected(int index) const {
+bool ServerSocket::IsPeerConnected(int index) const {
     if (index < 0 || index >= (int)peer_fds.size()) return false;
     return peer_fds[index] >= 0;
 }
 
-bool ServerSocket::reconnect_peer(int index, const PeerInfo& peer) {
+bool ServerSocket::ReconnectPeer(int index, const PeerInfo& peer) {
     if (index < 0 || index >= (int)peer_fds.size()) return false;
 
-    // Close the stale file descriptor if it is still open.
+    // close the stale file descriptor if it is still open.
     if (peer_fds[index] >= 0) {
         close(peer_fds[index]);
         peer_fds[index] = -1;
@@ -112,26 +112,26 @@ bool ServerSocket::reconnect_peer(int index, const PeerInfo& peer) {
         return false;
     }
 
-    identify_as_server(fd);
+    IdentifyAsServer(fd);
     peer_fds[index] = fd;
 
     std::cout << "[PFA] Reconnected to peer " << peer.id << std::endl;
     return true;
 }
 
-bool ServerSocket::identify_as_server(int client_fd) {
+bool ServerSocket::IdentifyAsServer(int client_fd) {
     int type = htonl(MSG_IDENTIFY_PFA);
 
     return send_all((char*)&type, sizeof(int), client_fd);
 }
 
-bool ServerSocket::send_ack(int client_fd) {
+bool ServerSocket::SendAck(int client_fd) {
     int ack = htonl(MSG_SERVER_ACK);
 
     return send_all((char*)&ack, sizeof(int), client_fd);
 }
 
-bool ServerSocket::receive_ack(int client_fd) {
+bool ServerSocket::ReceiveAck(int client_fd) {
     int val = 0;
 
     if (!receive_all((char*)&val, sizeof(int), client_fd)) return false;
@@ -139,13 +139,13 @@ bool ServerSocket::receive_ack(int client_fd) {
     return ntohl(val) == MSG_SERVER_ACK;
 }
 
-bool ServerSocket::receive_ack_from_peer(int peer_index) {
+bool ServerSocket::ReceiveAckFromPeer(int peer_index) {
     if (peer_index < 0 || peer_index >= (int)peer_fds.size()) return false;
 
-    return receive_ack(peer_fds[peer_index]);
+    return ReceiveAck(peer_fds[peer_index]);
 }
 
-void ServerSocket::set_peer_fd(int index, int fd) {
+void ServerSocket::SetPeerFd(int index, int fd) {
     if (index < 0 || index >= (int)peer_fds.size()) return;
 
     if (peer_fds[index] >= 0 && fd < 0) close(peer_fds[index]);
@@ -153,7 +153,7 @@ void ServerSocket::set_peer_fd(int index, int fd) {
     peer_fds[index] = fd;
 }
 
-bool ServerSocket::receive_identification(int& type, int client_fd) {
+bool ServerSocket::ReceiveIdentification(int& type, int client_fd) {
     int net_type = 0;
 
     if (!receive_all((char*)&net_type, sizeof(int), client_fd)) return false;
@@ -163,17 +163,7 @@ bool ServerSocket::receive_identification(int& type, int client_fd) {
     return true;
 }
 
-bool ServerSocket::send_heartbeat(int peer_index) {
-    if (peer_index < 0 || peer_index >= (int)peer_fds.size()) return false;
-
-    int fd = peer_fds[peer_index];
-
-    int type = htonl(MSG_HEARTBEAT);
-
-    return send_all((char*)&type, sizeof(int), fd);
-}
-
-bool ServerSocket::send(const Robot& robot, int client_fd) {
+bool ServerSocket::Send(const Robot& robot, int client_fd) {
     int fd = (client_fd != -1) ? client_fd : this->client_fd;
 
     char buffer[5 * sizeof(int)];
@@ -185,7 +175,7 @@ bool ServerSocket::send(const Robot& robot, int client_fd) {
     return send_all(buffer, len, fd);
 }
 
-bool ServerSocket::send(const CustomerRecord& record, int client_fd) {
+bool ServerSocket::Send(const CustomerRecord& record, int client_fd) {
     int fd = (client_fd != -1) ? client_fd : this->client_fd;
 
     char buffer[2 * sizeof(int)];
@@ -197,7 +187,7 @@ bool ServerSocket::send(const CustomerRecord& record, int client_fd) {
     return send_all(buffer, len, fd);
 }
 
-bool ServerSocket::receive(RobotOrder& order, int client_fd) {
+bool ServerSocket::Receive(RobotOrder& order, int client_fd) {
     int fd = client_fd;
 
     char buffer[3 * sizeof(int)];
@@ -207,8 +197,8 @@ bool ServerSocket::receive(RobotOrder& order, int client_fd) {
     return unmarshall(buffer, sizeof(buffer), order) > 0;
 }
 
-bool ServerSocket::send_replication_request(const ReplicationRequest& req,
-                                            int peer_index) {
+bool ServerSocket::SendReplicationRequest(const ReplicationRequest& req,
+                                          int peer_index) {
     if (peer_index < 0 || peer_index >= (int)peer_fds.size()) return false;
 
     char buffer[6 * sizeof(int)];
@@ -220,8 +210,8 @@ bool ServerSocket::send_replication_request(const ReplicationRequest& req,
     return send_all(buffer, len, peer_fds[peer_index]);
 }
 
-bool ServerSocket::receive_replication_request(ReplicationRequest& req,
-                                               int client_fd) {
+bool ServerSocket::ReceiveReplicationRequest(ReplicationRequest& req,
+                                             int client_fd) {
     char buffer[6 * sizeof(int)];
 
     if (!receive_all(buffer, sizeof(buffer), client_fd)) return false;

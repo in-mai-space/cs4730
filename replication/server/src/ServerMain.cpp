@@ -56,7 +56,6 @@ void handle_client_thread(ServerStub* stub, int client_fd, int engineer_id,
     stub->HandleClientRequest(client_fd, engineer_id, adminQueue);
 }
 
-// accept new connections in a loop; spawn an engineer thread per client.
 void initialize_engineer_threads(int id, ServerSocket& server_socket,
                                  ServerStub& server_stub,
                                  AdminRequestQueue& adminQueue) {
@@ -77,7 +76,6 @@ void initialize_engineer_threads(int id, ServerSocket& server_socket,
     }
 }
 
-// start exactly one admin thread
 void initialize_admin_thread(ServerStub& server_stub,
                              AdminRequestQueue& adminQueue) {
     std::cout << "[Admin 0] Initializing admin thread." << std::endl;
