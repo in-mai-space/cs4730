@@ -1,6 +1,7 @@
 #ifndef CLIENTSTUB_H
 #define CLIENTSTUB_H
 
+#include <atomic>
 #include <chrono>
 #include <mutex>
 #include <string>
