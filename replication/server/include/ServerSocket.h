@@ -16,40 +16,34 @@ class ServerSocket {
     bool listen(int port);
     int accept();
 
-    bool connect_to_peers(const std::vector<PeerInfo>& peers);
+    bool ConnectToPeers(const std::vector<PeerInfo>& peers);
 
-    // Reconnect a single peer (used when a failed server restarts).
-    bool reconnect_peer(int index, const PeerInfo& peer);
+    bool ReconnectPeer(int index, const PeerInfo& peer);
 
-    bool is_peer_connected(int index) const;
+    bool IsPeerConnected(int index) const;
 
-    bool identify_as_server(int client_fd);
+    bool IdentifyAsServer(int client_fd);
 
-    bool send_heartbeat(int peer_index);
+    bool ReceiveIdentification(int& type, int client_fd);
 
-    bool receive_identification(int& type, int client_fd);
+    bool SendAck(int client_fd);
+    bool ReceiveAck(int client_fd);
 
-    bool send_ack(int client_fd);
-    bool receive_ack(int client_fd);
+    bool ReceiveAckFromPeer(int peer_index);
 
-    bool receive_ack_from_peer(int peer_index);
+    bool Send(const Robot& robot, int client_fd = -1);
+    bool Send(const CustomerRecord& record, int client_fd = -1);
 
-    bool send(const Robot& robot, int client_fd = -1);
-    bool send(const CustomerRecord& record, int client_fd = -1);
+    bool Receive(RobotOrder& order, int client_fd = -1);
 
-    bool receive(RobotOrder& order, int client_fd = -1);
+    bool SendReplicationRequest(const ReplicationRequest& request,
+                                int peer_index);
 
-    bool send_replication_request(const ReplicationRequest& request,
-                                  int peer_index);
+    bool ReceiveReplicationRequest(ReplicationRequest& request, int client_fd);
 
-    bool receive_replication_request(ReplicationRequest& request,
-                                     int client_fd);
+    int NumPeers() const { return peer_fds.size(); }
 
-    int num_peers() const { return peer_fds.size(); }
-
-    void set_peer_fd(int index, int fd);
-
-    int get_peer_index(int fd);
+    void SetPeerFd(int index, int fd);
 
    private:
     int socket_fd;

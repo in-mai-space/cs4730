@@ -39,8 +39,10 @@ class ClientStub {
 
     /**
      * Sends a read-record request to the server and waits for the response.
-     * @param request The RobotOrder request to send (with request_type set to
-     * 2).
+     * @param customer_id The ID of the customer whose record to read.
+     * @param orders The number of orders to read for the customer.
+     * @param recorder The LatencyRecorder to record the latency of the
+     * operation.
      */
     bool ReadRecords(int customer_id, int orders, LatencyRecorder& recorder);
 
@@ -52,20 +54,12 @@ class ClientStub {
      */
     bool ScanRecords(int max_customer_id, LatencyRecorder& recorder);
 
-    /**
-     * Sends a read-record request to the server and returns the CustomerRecord
-     * response.
-     * @param request The RobotOrder request to send (with request_type set to
-     * 2).
-     */
-    CustomerRecord ReadRecord(const RobotOrder& request);
-
    private:
     CustomerRecord read_record(const RobotOrder& request);
-    Robot order_robot(const RobotOrder& request);
-    CustomerRecord scan_records(const RobotOrder& request);
 
     ClientSocket socket;
+
+    // indicates whether the client is still running
     std::atomic<bool> running{true};
 };
 

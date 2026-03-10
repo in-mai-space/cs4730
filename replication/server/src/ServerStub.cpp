@@ -29,7 +29,6 @@ void ServerStub::init(ServerSocket* socket, const ServerConfig& config) {
     this->peer_alive.assign(config.peers.size(), false);
 }
 
-// -------------------- Admin Thread --------------------
 void ServerStub::AdminProcessRequests(int admin_id,
                                       AdminRequestQueue& adminQueue) {
     std::cout << "[PFA " << admin_id
@@ -66,7 +65,6 @@ AdminRequest ServerStub::wait_for_admin_request(AdminRequestQueue& adminQueue) {
     return req;
 }
 
-// -------------------- Peer Management --------------------
 void ServerStub::ensure_primary_and_connect_peers() {
     std::lock_guard<std::mutex> sl(state_mutex);
     if (server_state.primary_id != -1) return;
@@ -76,20 +74,19 @@ void ServerStub::ensure_primary_and_connect_peers() {
     if (!peers_connected && !config.peers.empty()) {
         std::cout << "[PFA] Connecting to peers..." << std::endl;
 
-        socket->connect_to_peers(config.peers);
+        socket->ConnectToPeers(config.peers);
         peers_connected = true;
 
         for (size_t i = 0; i < peer_alive.size(); i++)
-            peer_alive[i] = socket->is_peer_connected(i);
+            peer_alive[i] = socket->IsPeerConnected(i);
 
         std::cout << "[PFA] Connected to peers." << std::endl;
     }
 }
 
-// -------------------- Log & Replication --------------------
 int ServerStub::append_to_log(const Robot& robot) {
     std::lock_guard<std::mutex> sl(state_mutex);
-    smr_log.add_operation(1, robot.customer_id, robot.order_number);
+    smr_log.AddOperation(1, robot.customer_id, robot.order_number);
     server_state.last_index++;
     return server_state.last_index;
 }
@@ -104,14 +101,14 @@ void ServerStub::replicate_to_peers(int cur_last) {
         committed_index = server_state.committed_index;
     }
 
-    for (int i = 0; i < socket->num_peers(); i++) {
+    for (int i = 0; i < socket->NumPeers(); i++) {
         if (!peer_alive[i]) {
             if (!try_reconnect_and_catchup(i)) continue;
         }
 
         int start = peer_last_index[i] + 1;
         for (int idx = start; idx <= cur_last; idx++) {
-            MapOp op = smr_log.get_operation(idx);
+            MapOp op = smr_log.GetOperation(idx);
             ReplicationRequest rep;
             rep.factory_id = factory_id;
             rep.committed_index = committed_index;
@@ -132,7 +129,7 @@ void ServerStub::replicate_to_peers(int cur_last) {
 void ServerStub::commit_locally(const Robot& robot, int cur_last) {
     {
         std::lock_guard<std::mutex> rl(records_mutex);
-        customerRecords.update_record(robot.customer_id, robot.order_number);
+        customerRecords.UpdateRecord(robot.customer_id, robot.order_number);
     }
 
     {
@@ -146,12 +143,11 @@ void ServerStub::fulfill_promise(AdminRequest& req, int admin_id) {
     req.promise.set_value(req.robot);
 }
 
-// -------------------- Client Requests --------------------
 void ServerStub::HandleClientRequest(int client_fd, int engineer_id,
                                      AdminRequestQueue& adminQueue) {
     int identity = -1;
 
-    if (!socket->receive_identification(identity, client_fd)) {
+    if (!socket->ReceiveIdentification(identity, client_fd)) {
         close(client_fd);
         return;
     }
@@ -203,12 +199,11 @@ bool ServerStub::handle_record_read(const RobotOrder& request, int client_fd) {
     CustomerRecord record;
     {
         std::lock_guard<std::mutex> rlock(records_mutex);
-        record = customerRecords.get_record(request.customer_id);
+        record = customerRecords.GetRecord(request.customer_id);
     }
     return ReturnRecord(record, client_fd);
 }
 
-// -------------------- Replication --------------------
 void ServerStub::handle_replication_request(int client_fd) {
     while (running) {
         ReplicationRequest req;
@@ -237,25 +232,9 @@ void ServerStub::handle_ifa_disconnect(int peer_index) {
     std::cout << "[PFA] Peer " << peer_index << " disconnected." << std::endl;
     std::lock_guard<std::mutex> sl(state_mutex);
     peer_alive[peer_index] = false;
-    socket->set_peer_fd(peer_index, -1);
+    socket->SetPeerFd(peer_index, -1);
 }
 
-void ServerStub::elect_new_primary() {
-    std::lock_guard<std::mutex> sl(state_mutex);
-    if (server_state.primary_id == server_state.factory_id) return;
-
-    for (size_t i = 0; i < config.peers.size(); i++) {
-        if (peer_alive[i]) {
-            server_state.primary_id = config.peers[i].id;
-            std::cout << "[PFA] New primary elected: factory_id="
-                      << server_state.primary_id << std::endl;
-            return;
-        }
-    }
-    server_state.primary_id = server_state.factory_id;
-}
-
-// -------------------- Replication Helpers --------------------
 void ServerStub::log_replication_request(const ReplicationRequest& req) {
     std::cout << "[IFA] Replication: factory_id=" << req.factory_id
               << " last_index=" << req.last_index
@@ -265,8 +244,8 @@ void ServerStub::log_replication_request(const ReplicationRequest& req) {
 void ServerStub::apply_replication_entry(const ReplicationRequest& req) {
     std::lock_guard<std::mutex> sl(state_mutex);
     server_state.primary_id = req.factory_id;
-    smr_log.write_operation(req.last_index, req.operation.op_code,
-                            req.operation.arg1, req.operation.arg2);
+    smr_log.WriteOperation(req.last_index, req.operation.op_code,
+                           req.operation.arg1, req.operation.arg2);
     server_state.last_index = req.last_index;
 }
 
@@ -282,12 +261,12 @@ void ServerStub::apply_committed_entry(const ReplicationRequest& req) {
     MapOp committed_op;
     {
         std::lock_guard<std::mutex> sl(state_mutex);
-        committed_op = smr_log.get_operation(req.committed_index);
+        committed_op = smr_log.GetOperation(req.committed_index);
     }
 
     {
         std::lock_guard<std::mutex> rl(records_mutex);
-        customerRecords.update_record(committed_op.arg1, committed_op.arg2);
+        customerRecords.UpdateRecord(committed_op.arg1, committed_op.arg2);
     }
 
     {
@@ -305,7 +284,7 @@ bool ServerStub::try_reconnect_and_catchup(int peer_index) {
     std::cout << "[PFA] Attempting reconnect to peer " << peer_index
               << std::endl;
 
-    if (!socket->reconnect_peer(peer_index, config.peers[peer_index])) {
+    if (!socket->ReconnectPeer(peer_index, config.peers[peer_index])) {
         std::cerr << "[PFA] Reconnect failed for peer " << peer_index
                   << std::endl;
         return false;
@@ -327,7 +306,7 @@ bool ServerStub::try_reconnect_and_catchup(int peer_index) {
         MapOp op;
         {
             std::lock_guard<std::mutex> sl(state_mutex);
-            op = smr_log.get_operation(k);
+            op = smr_log.GetOperation(k);
         }
 
         ReplicationRequest catchup;
@@ -358,27 +337,26 @@ bool ServerStub::try_reconnect_and_catchup(int peer_index) {
     return true;
 }
 
-// -------------------- Socket Wrappers --------------------
 bool ServerStub::ReceiveRequest(RobotOrder& request, int client_fd) {
-    return socket && socket->receive(request, client_fd);
+    return socket && socket->Receive(request, client_fd);
 }
 bool ServerStub::ShipRobot(const Robot& robot, int client_fd) {
-    return socket && socket->send(robot, client_fd);
+    return socket && socket->Send(robot, client_fd);
 }
 bool ServerStub::ReturnRecord(const CustomerRecord& record, int client_fd) {
-    return socket && socket->send(record, client_fd);
+    return socket && socket->Send(record, client_fd);
 }
 bool ServerStub::SendReplicationRequest(const ReplicationRequest& request,
                                         int peer_index) {
-    return socket && socket->send_replication_request(request, peer_index);
+    return socket && socket->SendReplicationRequest(request, peer_index);
 }
 bool ServerStub::ReceiveReplicationRequest(ReplicationRequest& request,
                                            int client_fd) {
-    return socket && socket->receive_replication_request(request, client_fd);
+    return socket && socket->ReceiveReplicationRequest(request, client_fd);
 }
 bool ServerStub::SendReplicationResponse(int client_fd) {
-    return socket && socket->send_ack(client_fd);
+    return socket && socket->SendAck(client_fd);
 }
 bool ServerStub::ReceiveReplicationResponse(int peer_index) {
-    return socket && socket->receive_ack_from_peer(peer_index);
+    return socket && socket->ReceiveAckFromPeer(peer_index);
 }
